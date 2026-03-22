@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7-Eleven Vietnam — Site Check</title>
+<style>
+:root {
+  --sev: #007350;
+  --sev-light: #e8f5ef;
+  --sev-dark: #005a3e;
+  --orange: #F37021;
+  --red: #EA1D2D;
+  --bg: #f7f8fa;
+  --card: #fff;
+  --border: #e0e3e8;
+  --text: #1a1a2e;
+  --muted: #6b7280;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+/* Header */
+.header { background: var(--sev); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.header h1 { font-size: 20px; font-weight: 700; }
+.header .subtitle { font-size: 13px; opacity: .8; }
+
+/* Steps nav */
+.steps-nav { display: flex; gap: 2px; background: #fff; border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto; }
+.step-tab { padding: 12px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: var(--muted); white-space: nowrap; transition: all .2s; }
+.step-tab:hover { color: var(--text); }
+.step-tab.active { color: var(--sev); border-bottom-color: var(--sev); }
+.step-tab.completed { color: var(--sev-dark); }
+.step-tab.completed::before { content: '✓ '; }
+
+/* Content */
+.content { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+.step-panel { display: none; }
+.step-panel.active { display: block; }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.card h2 { font-size: 18px; margin-bottom: 16px; color: var(--sev-dark); }
+.card h3 { font-size: 15px; margin: 16px 0 10px; color: var(--text); }
+
+/* Forms */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+label .unit { font-weight: 400; color: var(--muted); }
+input, select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; transition: border .2s; }
+input:focus, select:focus { outline: none; border-color: var(--sev); box-shadow: 0 0 0 3px rgba(0,115,80,.1); }
+input[type="number"] { -moz-appearance: textfield; }
+.help-text { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Buttons */
+.btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-primary { background: var(--sev); color: #fff; }
+.btn-primary:hover { background: var(--sev-dark); }
+.btn-secondary { background: #e5e7eb; color: var(--text); }
+.btn-secondary:hover { background: #d1d5db; }
+.btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--sev-light); font-weight: 600; color: var(--sev-dark); font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+td { font-variant-numeric: tabular-nums; }
+tr.bold td { font-weight: 700; }
+tr.highlight td { background: #fef3c7; font-weight: 700; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* Verdict badges */
+.verdict { display: inline-block; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 16px; }
+.verdict-go { background: #dcfce7; color: #166534; }
+.verdict-conditional { background: #fef3c7; color: #92400e; }
+.verdict-nogo { background: #fee2e2; color: #991b1b; }
+
+/* Metric cards */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.metric-card { background: var(--sev-light); border-radius: 8px; padding: 14px; text-align: center; }
+.metric-card .value { font-size: 24px; font-weight: 700; color: var(--sev-dark); }
+.metric-card .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Flags */
+.flag { padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+.flag-warn { background: #fef3c7; border-left: 4px solid var(--orange); }
+.flag-error { background: #fee2e2; border-left: 4px solid var(--red); }
+.flag-ok { background: #dcfce7; border-left: 4px solid var(--sev); }
+
+/* Waterfall */
+.waterfall-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 13px; }
+.waterfall-label { width: 240px; }
+.waterfall-bar { height: 24px; border-radius: 4px; min-width: 2px; }
+.waterfall-value { font-weight: 600; min-width: 80px; text-align: right; }
+
+/* Searchable Combobox */
+.combo-wrap { position: relative; }
+.combo-input-row { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 6px; background: #fff; transition: border .2s; overflow: hidden; }
+.combo-input-row:focus-within { border-color: var(--sev); box-shadow: 0 0 0 3px rgba(0,115,80,.1); }
+.combo-search { flex: 1; padding: 9px 12px; border: none; font-size: 14px; outline: none; background: transparent; color: var(--text); min-width: 0; cursor: pointer; }
+.combo-arrow { padding: 0 10px; color: var(--muted); cursor: pointer; font-size: 11px; user-select: none; flex-shrink: 0; }
+.combo-list { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; z-index: 200; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.combo-list.open { display: block; }
+.combo-option { padding: 8px 12px; font-size: 14px; cursor: pointer; }
+.combo-option:hover, .combo-option.focused { background: var(--sev-light); color: var(--sev-dark); }
+.combo-empty { padding: 10px 12px; font-size: 13px; color: var(--muted); font-style: italic; }
+
+/* Print */
+@media print {
+  .header { position: static; }
+  .steps-nav, .btn-row { display: none; }
+  .step-panel { display: block !important; page-break-inside: avoid; }
+}
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>7-Eleven Vietnam — Site Check</h1>
+    <div class="subtitle">Store Location Feasibility Calculator</div>
+  </div>
+</div>
+
+<div class="steps-nav" id="stepsNav">
+  <div class="step-tab active" data-step="0">1. Location</div>
+  <div class="step-tab" data-step="1">2. Investment</div>
+  <div class="step-tab" data-step="2">3. Benchmarks</div>
+  <div class="step-tab" data-step="3">4. Forecast</div>
+  <div class="step-tab" data-step="4">5. DCF</div>
+  <div class="step-tab" data-step="5">6. Result</div>
+</div>
+
+<div class="content">
+
+<!-- ════════════════ STEP 1: LOCATION INPUTS ════════════════ -->
+<div class="step-panel active" id="step0">
+  <div class="card">
+    <h2>Location Inputs</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>City</label>
+        <select id="city" onchange="onCityChange()">
+          <option value="HCM">Ho Chi Minh City</option>
+          <option value="HN">Hanoi</option>
+          <option value="BD">Binh Duong</option>
+          <option value="LA">Long An</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>District</label>
+        <div class="combo-wrap">
+          <div class="combo-input-row">
+            <input type="text" class="combo-search" id="districtSearch" placeholder="Select district…" autocomplete="off"
+              onfocus="openCombo('district')" onblur="delayCloseCombo('district')" oninput="filterCombo('district')">
+            <span class="combo-arrow" onmousedown="toggleCombo('district')">▾</span>
+          </div>
+          <div class="combo-list" id="districtList"></div>
+        </div>
+        <input type="hidden" id="district">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ward</label>
+        <div class="combo-wrap">
+          <div class="combo-input-row">
+            <input type="text" class="combo-search" id="wardSearch" placeholder="Select ward…" autocomplete="off"
+              onfocus="openCombo('ward')" onblur="delayCloseCombo('ward')" oninput="filterCombo('ward')">
+            <span class="combo-arrow" onmousedown="toggleCombo('ward')">▾</span>
+          </div>
+          <div class="combo-list" id="wardList"></div>
+        </div>
+        <input type="hidden" id="ward">
+      </div>
+      <div class="form-group">
+        <label>Street Address <span class="unit">(number + street name)</span></label>
+        <input type="text" id="address" placeholder="e.g. 123 Nguyen Hue" list="streetSuggestions" autocomplete="off">
+        <datalist id="streetSuggestions"></datalist>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Trade Type</label>
+        <select id="tradeType">
+          <option value="Street">Street</option>
+          <option value="Residential">Residential</option>
+          <option value="Commercial">Commercial</option>
+          <option value="Corporate">Corporate</option>
+          <option value="Hospital">Hospital</option>
+          <option value="University">University</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tier Price</label>
+        <select id="tierPrice">
+          <option value="HCM_T7">HCM Tier 7 (Standard)</option>
+          <option value="HCM_T8">HCM Tier 8 (High-traffic)</option>
+          <option value="HCM_T9">HCM Tier 9 (Premium)</option>
+          <option value="HN_T8">HN Tier 8</option>
+          <option value="HN_T9">HN Tier 9 (Premium)</option>
+          <option value="BD_T7">BD Tier 7</option>
+          <option value="LA">LA</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Ground Floor <span class="unit">(sqm)</span></label>
+        <input type="number" id="gfSqm" min="30" max="300" step="1" placeholder="e.g. 68">
+      </div>
+      <div class="form-group">
+        <label>Total Floors</label>
+        <select id="totalFloors">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4+</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Additional Floor Area <span class="unit">(sqm)</span></label>
+        <input type="number" id="addFloorSqm" min="0" step="1" value="0">
+      </div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Monthly Rent <span class="unit">(VND)</span></label>
+        <input type="number" id="monthlyRent" min="0" step="1000000" placeholder="e.g. 45000000">
+      </div>
+      <div class="form-group">
+        <label>Rent VAT</label>
+        <select id="rentVat">
+          <option value="exclusive">Exclusive (add 10%)</option>
+          <option value="inclusive">Inclusive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tax Invoice</label>
+        <select id="taxInvoice">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Rent Escalation <span class="unit">(%)</span></label>
+        <input type="number" id="rentEscRate" min="0" max="20" step="0.5" value="0">
+      </div>
+      <div class="form-group">
+        <label>Escalation Timing</label>
+        <select id="rentEscTiming">
+          <option value="none">No escalation</option>
+          <option value="annual">Annual</option>
+          <option value="year3">Year 3 only</option>
+          <option value="biennial">Every 2 years</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Lease Term <span class="unit">(years)</span></label>
+        <input type="number" id="leaseTerm" min="1" max="20" step="1" value="5">
+      </div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Frontage <span class="unit">(metres, optional)</span></label>
+        <input type="number" id="frontage" min="0" step="0.1" placeholder="e.g. 5.5">
+      </div>
+      <div class="form-group">
+        <label>Foot Traffic</label>
+        <select id="footTraffic">
+          <option value="unknown">Unknown</option>
+          <option value="high">High (>700 txn/day)</option>
+          <option value="medium">Medium (400-700)</option>
+          <option value="low">Low (<400)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Backroom Placement</label>
+        <select id="backroomPlacement">
+          <option value="gf">Ground Floor</option>
+          <option value="upper">Upper Floor</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="goStep(1)">Next: Investment Budget →</button>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 2: INVESTMENT BUDGET ════════════════ -->
+<div class="step-panel" id="step1">
+  <div class="card">
+    <h2>Investment Budget</h2>
+    <p style="color:var(--muted);margin-bottom:16px;font-size:13px">Auto-calculated from store size. Override rates below if needed.</p>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>GF Fit-out Rate <span class="unit">(VND/sqm)</span></label>
+        <input type="number" id="gfFitoutRate" value="10000000" step="500000">
+        <div class="help-text">Standard: 10M. Range: 7M–13M</div>
+      </div>
+      <div class="form-group">
+        <label>Add'l Floor Rate <span class="unit">(VND/sqm)</span></label>
+        <input type="number" id="addFloorRate" value="3000000" step="500000">
+        <div class="help-text">Standard: 3M. Range: 2M–5M</div>
+      </div>
+      <div class="form-group">
+        <label>Deposit Override <span class="unit">(VND, 0=auto)</span></label>
+        <input type="number" id="depositOverride" value="0" step="1000000">
+        <div class="help-text">Default: 3 × Monthly Rent</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="calcInvestment()" style="margin-bottom:20px">Calculate Investment</button>
+    <div id="investmentResult"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(0)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(2)">Next: Benchmarks →</button>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 3: COMPARABLE BENCHMARKS ════════════════ -->
+<div class="step-panel" id="step2">
+  <div class="card">
+    <h2>Comparable Store Benchmarks</h2>
+    <p style="color:var(--muted);margin-bottom:16px;font-size:13px">Enter comparable data if available, or use network fallback defaults for your city/format.</p>
+    <button class="btn btn-secondary" onclick="loadFallbackRatios()" style="margin-bottom:16px">Load Fallback Defaults</button>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Median APSD <span class="unit">(VND)</span></label>
+        <input type="number" id="compApsd" placeholder="e.g. 30000000">
+      </div>
+      <div class="form-group">
+        <label>P25 APSD <span class="unit">(VND)</span></label>
+        <input type="number" id="compP25">
+      </div>
+      <div class="form-group">
+        <label>P75 APSD <span class="unit">(VND)</span></label>
+        <input type="number" id="compP75">
+      </div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Comparable Count</label>
+        <input type="number" id="compCount" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label>Median OP Days</label>
+        <input type="number" id="compOpDays" value="28" min="20" max="31">
+      </div>
+      <div class="form-group">
+        <label>Median Basket <span class="unit">(VND)</span></label>
+        <input type="number" id="compBasket" placeholder="e.g. 42000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Base C-Count <span class="unit">(txn/day)</span></label>
+        <input type="number" id="baseCCount" placeholder="e.g. 650">
+        <div class="help-text">APSD ÷ Basket = C-Count (auto-calc if blank)</div>
+      </div>
+      <div class="form-group">
+        <label>APSD Override <span class="unit">(VND, optional)</span></label>
+        <input type="number" id="apsdOverride" placeholder="Your own estimate">
+      </div>
+    </div>
+    <h3>Cost Ratios (% of Sales)</h3>
+    <div class="form-row triple">
+      <div class="form-group"><label>GP%</label><input type="number" id="r_gp" step="0.1" min="30" max="50"></div>
+      <div class="form-group"><label>CDC%</label><input type="number" id="r_cdc" step="0.1" min="2" max="5"></div>
+      <div class="form-group"><label>OI% (Other Income)</label><input type="number" id="r_oi" step="0.1" min="0" max="10"></div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group"><label>SI% (Service Income)</label><input type="number" id="r_si" step="0.1" min="0" max="2"></div>
+      <div class="form-group"><label>Labor%</label><input type="number" id="r_labor" step="0.1" min="4" max="15"></div>
+      <div class="form-group"><label>Utilities%</label><input type="number" id="r_util" step="0.1" min="0.5" max="8"></div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group"><label>Write-off%</label><input type="number" id="r_wo" step="0.1" min="0" max="3"></div>
+      <div class="form-group"><label>OpEx%</label><input type="number" id="r_opex" step="0.1" min="1" max="5"></div>
+      <div class="form-group"><label>BOM%</label><input type="number" id="r_bom" step="0.1" min="0" max="1"></div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group"><label>Inv%</label><input type="number" id="r_inv" step="0.1" min="0" max="1"></div>
+      <div class="form-group"><label>Marketing%</label><input type="number" id="r_mkt" step="0.1" min="0" max="2"></div>
+      <div class="form-group">
+        <label>7E Fee% <span class="unit">(locked)</span></label>
+        <input type="number" id="r_fee" value="3.0" step="0.1" readonly style="background:#f3f4f6">
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(3)">Next: Sales Forecast →</button>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 4: SALES FORECAST ════════════════ -->
+<div class="step-panel" id="step3">
+  <div class="card">
+    <h2>Sales Forecast</h2>
+    <h3>Location Quality Multiplier</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Street Tier</label>
+        <select id="streetTier">
+          <option value="none">No trade area (x1.00)</option>
+          <option value="1">Tier 1 — Primary high-footfall (x1.35)</option>
+          <option value="2">Tier 2 — Adjacent secondary (x1.00)</option>
+          <option value="3">Tier 3 — Low connectivity (x0.70)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Hotel Proximity</label>
+        <select id="hotelProximity">
+          <option value="none">No data (x1.00)</option>
+          <option value="3star">3+ hotels (3-star+) within 200m (x1.08)</option>
+          <option value="5any">5+ hotels (any) within 200m (x1.05)</option>
+          <option value="few">1-4 hotels within 200m (x1.00)</option>
+          <option value="zero">0 hotels within 200m (x0.97)</option>
+        </select>
+      </div>
+    </div>
+    <h3>Competitive Proximity (Manual Entry)</h3>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>External competitors within 50m</label>
+        <input type="number" id="comp50m" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label>External competitors within 200m</label>
+        <input type="number" id="comp200m" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label>7-Eleven stores within 200m</label>
+        <input type="number" id="sev200m" min="0" value="0">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="calcForecast()" style="margin-bottom:20px">Calculate Forecast</button>
+    <div id="forecastResult"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(4)">Next: DCF →</button>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 5: DCF VALUATION ════════════════ -->
+<div class="step-panel" id="step4">
+  <div class="card">
+    <h2>DCF Valuation</h2>
+    <div class="form-row triple">
+      <div class="form-group">
+        <label>Discount Rate <span class="unit">(%)</span></label>
+        <input type="number" id="discountRate" value="10" step="0.5" min="0" max="30">
+      </div>
+      <div class="form-group">
+        <label>Terminal Value Multiple</label>
+        <select id="tvMultiple">
+          <option value="3">3x (Bear)</option>
+          <option value="4" selected>4x (Base)</option>
+          <option value="5">5x (Bull)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Basket Inflation <span class="unit">(%/yr)</span></label>
+        <input type="number" id="basketInflation" value="3" step="0.5" min="0" max="10">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="calcDCF()" style="margin-bottom:20px">Run DCF Model</button>
+    <div id="dcfResult"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(3)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(5)">Next: Recommendation →</button>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 6: RECOMMENDATION ════════════════ -->
+<div class="step-panel" id="step5">
+  <div class="card">
+    <h2>Recommendation</h2>
+    <button class="btn btn-primary" onclick="calcRecommendation()" style="margin-bottom:20px">Generate Recommendation</button>
+    <div id="recommendationResult"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(4)">← Back</button>
+    <button class="btn btn-primary" onclick="printReport()">Print Report</button>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════════
+const STATE = {
+  investment: null,
+  forecast: null,
+  dcf: null,
+};
+
+// ── Navigation ──
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach((p,i) => {
+    p.classList.toggle('active', i === n);
+  });
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.toggle('active', i === n);
+  });
+  window.scrollTo(0,0);
+  // Auto-calculate on entry
+  if (n === 1) calcInvestment();
+  if (n === 3) calcForecast();
+  if (n === 4) calcDCF();
+  if (n === 5) calcRecommendation();
+}
+document.querySelectorAll('.step-tab').forEach(t => {
+  t.addEventListener('click', () => goStep(+t.dataset.step));
+});
+
+// ── Helpers ──
+const $ = id => document.getElementById(id);
+const num = id => parseFloat($(id).value) || 0;
+const fmtM = v => (v / 1e6).toFixed(1) + 'M';
+const fmtB = v => (v / 1e9).toFixed(2) + 'B';
+const fmtVND = v => {
+  if (Math.abs(v) >= 1e9) return fmtB(v);
+  if (Math.abs(v) >= 1e6) return fmtM(v);
+  return Math.round(v).toLocaleString();
+};
+const fmtPct = v => v.toFixed(1) + '%';
+const fmtNo = v => Math.round(v).toLocaleString();
+
+// ═══════════════════════════════════════════════════════════════
+// FALLBACK COST RATIOS
+// ═══════════════════════════════════════════════════════════════
+const FALLBACK = {
+  HCM: {
+    Street:      {gp:38.8,cdc:3.4,oi:3.5,si:0.2,labor:7.0,util:3.1,wo:1.4,opex:2.8,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Residential: {gp:38.7,cdc:3.4,oi:3.7,si:0.2,labor:9.1,util:4.9,wo:1.8,opex:3.5,bom:0.4,inv:0.3,mkt:0.5,fee:3.0},
+    Commercial:  {gp:40.2,cdc:3.4,oi:3.2,si:0.2,labor:6.5,util:4.0,wo:1.4,opex:2.8,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Corporate:   {gp:39.1,cdc:3.4,oi:3.1,si:0.2,labor:8.5,util:2.3,wo:1.8,opex:3.0,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Hospital:    {gp:38.0,cdc:3.4,oi:1.5,si:0.2,labor:7.9,util:1.9,wo:1.3,opex:2.5,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    University:  {gp:38.8,cdc:3.4,oi:1.0,si:0.2,labor:6.5,util:1.7,wo:1.2,opex:2.5,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+  },
+  HN: {
+    Street:      {gp:38.8,cdc:4.0,oi:3.5,si:0.2,labor:7.0,util:3.1,wo:1.4,opex:2.8,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Residential: {gp:38.7,cdc:4.0,oi:3.7,si:0.2,labor:9.1,util:4.9,wo:1.8,opex:3.5,bom:0.4,inv:0.3,mkt:0.5,fee:3.0},
+    Commercial:  {gp:40.2,cdc:4.0,oi:3.2,si:0.2,labor:6.5,util:4.0,wo:1.4,opex:2.8,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Corporate:   {gp:39.1,cdc:4.0,oi:3.1,si:0.2,labor:8.5,util:2.3,wo:1.8,opex:3.0,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    Hospital:    {gp:38.0,cdc:4.0,oi:1.5,si:0.2,labor:7.9,util:1.9,wo:1.3,opex:2.5,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+    University:  {gp:38.8,cdc:4.0,oi:1.0,si:0.2,labor:6.5,util:1.7,wo:1.2,opex:2.5,bom:0.3,inv:0.2,mkt:0.5,fee:3.0},
+  }
+};
+// BD and LA fall back to HCM ratios
+FALLBACK.BD = FALLBACK.HCM;
+FALLBACK.LA = FALLBACK.HCM;
+
+function loadFallbackRatios() {
+  const city = $('city').value;
+  const tt = $('tradeType').value;
+  const r = (FALLBACK[city] || FALLBACK.HCM)[tt] || FALLBACK.HCM.Street;
+  $('r_gp').value = r.gp; $('r_cdc').value = r.cdc; $('r_oi').value = r.oi; $('r_si').value = r.si;
+  $('r_labor').value = r.labor; $('r_util').value = r.util; $('r_wo').value = r.wo; $('r_opex').value = r.opex;
+  $('r_bom').value = r.bom; $('r_inv').value = r.inv; $('r_mkt').value = r.mkt; $('r_fee').value = r.fee;
+}
+
+function getRatios() {
+  return {
+    gp: num('r_gp')/100, cdc: num('r_cdc')/100, oi: num('r_oi')/100, si: num('r_si')/100,
+    labor: num('r_labor')/100, util: num('r_util')/100, wo: num('r_wo')/100, opex: num('r_opex')/100,
+    bom: num('r_bom')/100, inv: num('r_inv')/100, mkt: num('r_mkt')/100, fee: num('r_fee')/100,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ELECTRICITY LOOKUP
+// ═══════════════════════════════════════════════════════════════
+function kwhPerSqm(gf) {
+  if (gf < 60) return 144;
+  if (gf < 80) return 123;
+  if (gf < 100) return 110;
+  if (gf < 120) return 107;
+  if (gf < 140) return 92;
+  if (gf < 160) return 70;
+  return 60;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 2: INVESTMENT BUDGET
+// ═══════════════════════════════════════════════════════════════
+function calcInvestment() {
+  const gf = num('gfSqm');
+  if (!gf) { $('investmentResult').innerHTML = '<div class="flag flag-warn">Enter Ground Floor sqm first (Step 1)</div>'; return; }
+
+  const floors = parseInt($('totalFloors').value);
+  const addSqm = num('addFloorSqm');
+  const gfRate = num('gfFitoutRate');
+  const addRate = num('addFloorRate');
+  const rent = num('monthlyRent');
+  const depOverride = num('depositOverride');
+  const backroomOnGF = $('backroomPlacement').value === 'gf';
+  const totalUsable = gf + addSqm;
+
+  // Fitout
+  const fitoutGF = gf * gfRate;
+  const fitoutAdd = addSqm * addRate;
+  const fitoutTotal = fitoutGF + fitoutAdd;
+
+  // Gondola sizing
+  const gondolaStd = totalUsable >= 60;
+  const gondolaFP = gondolaStd ? 0.2625 : 0.1875;
+  const gondolaCost = gondolaStd ? 2294000 : 3343000;
+
+  // Chiller/Freezer config
+  let chillerArea, chillerCost, chillerDesc;
+  let freezerArea, freezerCost, freezerDesc;
+  if (gf >= 80) {
+    chillerArea = 0.63 + 0.49*2; chillerCost = 80e6 + 71e6*2; chillerDesc = '1x3-door + 2x2-door';
+    freezerArea = 0.49; freezerCost = 71e6; freezerDesc = '1x2-door';
+  } else if (gf >= 70) {
+    chillerArea = 0.63*2; chillerCost = 80e6*2; chillerDesc = '2x3-door';
+    freezerArea = 0.49; freezerCost = 71e6; freezerDesc = '1x2-door';
+  } else {
+    chillerArea = 0.63*2; chillerCost = 80e6*2; chillerDesc = '2x3-door';
+    freezerArea = 0.35; freezerCost = 34e6; freezerDesc = '1x1-door';
+  }
+
+  // Fixed core
+  const counterArea = 12.72;
+  const backroomArea = backroomOnGF ? 16.0 : 0;
+  const showcaseArea = 1.62 * 2; // 2 mandatory
+  const iceCreamArea = 0.48;
+  const mandatoryGondolaArea = 16 * gondolaFP;
+  const fixedArea = counterArea + backroomArea + showcaseArea + chillerArea + freezerArea + iceCreamArea + mandatoryGondolaArea;
+  const hardStop = gf * 0.55;
+  const guideline = gf * 0.45;
+  const hardStopExceeded = fixedArea > hardStop;
+
+  // Equipment costs: core
+  const counterCost = 320e6;
+  const backroomCost = 100e6;
+  const showcaseCost = 80e6 * 2;
+  const iceCreamCost = 30e6;
+  const itCost = 140e6;
+  const mandatoryGondolaCost = 16 * gondolaCost;
+
+  let usedArea = fixedArea;
+  let totalEquipCost = counterCost + backroomCost + showcaseCost + chillerCost + freezerCost + iceCreamCost + itCost + mandatoryGondolaCost;
+  const equipItems = [];
+
+  // Fill items (within 45% guideline)
+  let space45 = guideline - usedArea;
+  const fillLog = [];
+
+  // Fill 1: Ice Cream 2nd
+  if (space45 >= 0.48) { totalEquipCost += 30e6; usedArea += 0.48; space45 -= 0.48; fillLog.push('2nd Ice Cream Chest (+30M)'); }
+  // Fill 2: Freezer upgrade
+  if (freezerDesc === '1x1-door' && space45 >= 0.63) { totalEquipCost += (80e6-34e6); usedArea += (0.63-0.35); space45 -= (0.63-0.35); fillLog.push('Freezer upgrade to 3-door (+46M)'); }
+  else if (freezerDesc === '1x1-door' && space45 >= 0.49) { totalEquipCost += (71e6-34e6); usedArea += (0.49-0.35); space45 -= (0.49-0.35); fillLog.push('Freezer upgrade to 2-door (+37M)'); }
+  // Fill 3: 3rd showcase
+  if (space45 >= 1.62) { totalEquipCost += 80e6; usedArea += 1.62; space45 -= 1.62; fillLog.push('3rd Open Showcase (+80M)'); }
+  // Fill 4: 3rd chiller (for <80sqm stores)
+  if (gf < 80 && space45 >= 0.49) { totalEquipCost += 71e6; usedArea += 0.49; space45 -= 0.49; fillLog.push('3rd Reach-in Chiller 2-door (+71M)'); }
+  else if (gf < 80 && space45 >= 0.35) { totalEquipCost += 34e6; usedArea += 0.35; space45 -= 0.35; fillLog.push('3rd Reach-in Chiller 1-door (+34M)'); }
+
+  // Step 3: Additional gondolas (fill to 55%)
+  const space55 = hardStop - usedArea;
+  let addGondolas = 0;
+  if (space55 > 0) {
+    addGondolas = Math.min(Math.floor(space55 / gondolaFP), 20); // 36-16 max
+    totalEquipCost += addGondolas * gondolaCost;
+    usedArea += addGondolas * gondolaFP;
+  }
+  const totalGondolas = 16 + addGondolas;
+
+  // Eat-in check
+  const space45final = guideline - usedArea;
+  const eatInFits = space45final >= 4.0;
+
+  // Licensing, deposit
+  const licensing = 150e6;
+  const deposit = depOverride > 0 ? depOverride : rent * 3;
+  const totalInvestment = fitoutTotal + totalEquipCost + licensing + deposit;
+  const utilization = (usedArea / gf * 100);
+
+  // Store format
+  let storeFormat = $('tradeType').value;
+  if (storeFormat === 'Street') {
+    if (gf <= 60) storeFormat = 'Street Small';
+    else if (gf <= 80) storeFormat = 'Street Medium';
+    else storeFormat = 'Street Large';
+  }
+
+  STATE.investment = { fitoutTotal, totalEquipCost, licensing, deposit, totalInvestment, storeFormat, eatInFits };
+
+  // Render
+  let html = '';
+  if (hardStopExceeded) {
+    html += `<div class="flag flag-error">HARD STOP EXCEEDED — Mandatory core (${fixedArea.toFixed(1)} sqm) exceeds 55% of GF (${hardStop.toFixed(1)} sqm). ${backroomOnGF ? 'Consider moving backroom to upper floor.' : 'Contact fit-out team to redesign.'}</div>`;
+  }
+
+  html += `<div class="metrics-grid">
+    <div class="metric-card"><div class="value">${fmtB(totalInvestment)}</div><div class="label">Total Investment</div></div>
+    <div class="metric-card"><div class="value">${fmtB(fitoutTotal)}</div><div class="label">Fit-out</div></div>
+    <div class="metric-card"><div class="value">${fmtB(totalEquipCost)}</div><div class="label">Equipment</div></div>
+    <div class="metric-card"><div class="value">${utilization.toFixed(1)}%</div><div class="label">Floor Utilization</div></div>
+  </div>`;
+
+  html += `<table>
+    <tr><th colspan="2">Investment Breakdown</th><th class="text-right">Amount (VND)</th></tr>
+    <tr><td colspan="2">GF Fit-out (${gf} sqm × ${fmtM(gfRate)}/sqm)</td><td class="text-right">${fmtVND(fitoutGF)}</td></tr>`;
+  if (addSqm > 0) html += `<tr><td colspan="2">Add'l Floor Fit-out (${addSqm} sqm × ${fmtM(addRate)}/sqm)</td><td class="text-right">${fmtVND(fitoutAdd)}</td></tr>`;
+  html += `<tr class="bold"><td colspan="2">Total Fit-out</td><td class="text-right">${fmtVND(fitoutTotal)}</td></tr>
+    <tr><td colspan="2">Counter Area (zone budget)</td><td class="text-right">${fmtVND(counterCost)}</td></tr>
+    <tr><td colspan="2">Backroom</td><td class="text-right">${fmtVND(backroomCost)}</td></tr>
+    <tr><td colspan="2">Open Showcase × 2</td><td class="text-right">${fmtVND(showcaseCost)}</td></tr>
+    <tr><td colspan="2">Reach-in Chiller (${chillerDesc})</td><td class="text-right">${fmtVND(chillerCost)}</td></tr>
+    <tr><td colspan="2">Upright Freezer (${freezerDesc})</td><td class="text-right">${fmtVND(freezerCost)}</td></tr>
+    <tr><td colspan="2">Ice Cream Chest × 1</td><td class="text-right">${fmtVND(iceCreamCost)}</td></tr>
+    <tr><td colspan="2">Gondolas × ${totalGondolas} (${gondolaStd ? '750×350' : '750×250'})</td><td class="text-right">${fmtVND(totalGondolas * gondolaCost)}</td></tr>
+    <tr><td colspan="2">IT Package (POS, CCTV, Network)</td><td class="text-right">${fmtVND(itCost)}</td></tr>`;
+  fillLog.forEach(f => { html += `<tr><td colspan="2" style="color:var(--sev)">✓ ${f}</td><td></td></tr>`; });
+  html += `<tr class="bold"><td colspan="2">Total Equipment</td><td class="text-right">${fmtVND(totalEquipCost)}</td></tr>
+    <tr><td colspan="2">Licensing</td><td class="text-right">${fmtVND(licensing)}</td></tr>
+    <tr><td colspan="2">Deposit (${depOverride > 0 ? 'override' : '3 × rent'})</td><td class="text-right">${fmtVND(deposit)}</td></tr>
+    <tr class="bold highlight"><td colspan="2">TOTAL INVESTMENT</td><td class="text-right">${fmtVND(totalInvestment)}</td></tr>
+  </table>`;
+
+  html += `<div style="margin-top:12px;font-size:13px;color:var(--muted)">
+    Store Format: ${storeFormat} | Floor util: ${utilization.toFixed(1)}% (guideline 45%, hard stop 55%) |
+    Gondola config: ${gondolaStd ? 'Standard 750×350' : 'Compact 750×250'} |
+    Backroom: ${backroomOnGF ? 'Ground Floor' : 'Upper Floor'} |
+    Eat-in: ${eatInFits ? 'Space available' : 'No space'}
+  </div>`;
+
+  $('investmentResult').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 4: SALES FORECAST
+// ═══════════════════════════════════════════════════════════════
+function calcForecast() {
+  const compApsd = num('compApsd');
+  const apsdOverride = num('apsdOverride');
+  const startingApsd = apsdOverride > 0 ? apsdOverride : compApsd;
+  if (!startingApsd) {
+    $('forecastResult').innerHTML = '<div class="flag flag-warn">Enter Median APSD or APSD Override in Step 3 first.</div>';
+    return;
+  }
+
+  const frontage = num('frontage');
+  const footTraffic = $('footTraffic').value;
+  const streetTier = $('streetTier').value;
+  const hotel = $('hotelProximity').value;
+  const gf = num('gfSqm');
+  const basket = num('compBasket') || 42000;
+  const comp50 = num('comp50m');
+  const comp200 = num('comp200m');
+  const sev200 = num('sev200m');
+  const compCount = num('compCount');
+  const compP25 = num('compP25');
+  const compP75 = num('compP75');
+  const opDays = num('compOpDays') || 28;
+  const rent = num('monthlyRent');
+
+  // 2a Street Tier
+  let tierAdj = 1.0;
+  if (streetTier === '1') tierAdj = 1.35;
+  else if (streetTier === '3') tierAdj = 0.70;
+
+  // 2b Frontage
+  let frontAdj = 1.0;
+  if (frontage >= 6) frontAdj = 1.05;
+  else if (frontage > 0 && frontage < 4) frontAdj = 0.95;
+  else if (!frontage) frontAdj = 0.95;
+
+  // 2c Foot Traffic
+  let trafficAdj = 1.0;
+  if (footTraffic === 'high') trafficAdj = 1.10;
+  else if (footTraffic === 'low') trafficAdj = 0.90;
+
+  // 2e Hotel
+  let hotelAdj = 1.0;
+  const isTier3 = streetTier === '3';
+  if (!isTier3) {
+    if (hotel === '3star') hotelAdj = 1.08;
+    else if (hotel === '5any') hotelAdj = 1.05;
+    else if (hotel === 'zero') hotelAdj = 0.97;
+  }
+
+  let qualityMult = tierAdj * frontAdj * trafficAdj * hotelAdj;
+  let multCapped = false;
+  if (qualityMult < 0.55) { qualityMult = 0.55; multCapped = true; }
+  if (qualityMult > 1.60) { qualityMult = 1.60; multCapped = true; }
+
+  const qualAdjApsd = startingApsd * qualityMult;
+
+  // 3a External competitor adjustment
+  let extAdj = 0;
+  let tierMod = 0;
+  if (streetTier === '1') tierMod = 0.02;
+  else if (streetTier === '3') tierMod = -0.02;
+
+  if (comp50 >= 2) extAdj = -0.08 + tierMod;
+  else if (comp50 >= 1) extAdj = -0.05 + tierMod;
+
+  // Vibrancy uplift only if no 50m penalty
+  if (comp50 === 0 && comp200 >= 4) extAdj = 0.03 + tierMod;
+
+  const afterExt = qualAdjApsd * (1 + extAdj);
+
+  // 3b Cannibalization
+  let cannAdj = 0;
+  if (sev200 >= 2) cannAdj = -0.15;
+  else if (sev200 >= 1) cannAdj = -0.10;
+
+  const finalApsd = afterExt * (1 + cannAdj);
+
+  // Sensitivity
+  let bear, conservative, optimistic, bull;
+  conservative = finalApsd * 0.85;
+  optimistic = finalApsd * 1.20;
+
+  if (compCount >= 3 && compP25 && compP75) {
+    const p25adj = compP25 * qualityMult * (1 + extAdj) * (1 + cannAdj);
+    const p75adj = compP75 * qualityMult * (1 + extAdj) * (1 + cannAdj);
+    bear = Math.min(p25adj, finalApsd * 0.75);
+    bull = Math.max(p75adj, finalApsd * 1.35);
+  } else {
+    bear = finalApsd * (compCount >= 3 ? 0.75 : 0.55);
+    bull = finalApsd * (compCount >= 3 ? 1.35 : 1.55);
+  }
+
+  // Ordering rule
+  if (bear > conservative) bear = conservative * 0.90;
+  if (bull < optimistic) bull = optimistic * 1.10;
+
+  // Breakeven
+  const ratios = getRatios();
+  const netMarginBeforeRent = ratios.gp - ratios.cdc + ratios.oi + ratios.si
+    - (ratios.labor + ratios.util + ratios.wo + ratios.opex + ratios.bom + ratios.inv + ratios.mkt + ratios.fee);
+  const breakeven = netMarginBeforeRent > 0 ? (rent / netMarginBeforeRent) / opDays : Infinity;
+  const safetyMargin = finalApsd > 0 ? ((finalApsd - breakeven) / finalApsd * 100) : 0;
+
+  // Capacity check
+  const dailyTxn = finalApsd / basket;
+  const txnPerSqm = gf > 0 ? dailyTxn / gf : 0;
+
+  // Confidence
+  let pts = 0;
+  pts += compCount >= 5 ? 3 : (compCount >= 3 ? 2 : 1);
+  pts += 2; // default cascade level unknown = medium
+  const qualFactors = [streetTier !== 'none', frontage > 0, footTraffic !== 'unknown', hotel !== 'none'].filter(Boolean).length;
+  pts += qualFactors >= 4 ? 3 : (qualFactors >= 2 ? 2 : 1);
+  pts += (comp50 > 0 || comp200 > 0 || sev200 > 0) ? 3 : 1;
+  const grade = pts >= 10 ? 'A' : (pts >= 7 ? 'B' : (pts >= 4 ? 'C' : 'D'));
+
+  // Risk flags
+  const flags = [];
+  if (finalApsd < breakeven) flags.push({s:'error',t:'Below Breakeven — store loses money at forecast APSD'});
+  if (safetyMargin >= 0 && safetyMargin < 20) flags.push({s:'warn',t:`Thin Margin — safety margin ${safetyMargin.toFixed(1)}%`});
+  if (sev200 >= 2) flags.push({s:'error',t:'High Cannibalization Risk — 2+ 7-Eleven within 200m'});
+  else if (sev200 >= 1) flags.push({s:'warn',t:'Cannibalization Risk — 1 existing 7-Eleven within 200m'});
+  if (comp50 >= 2) flags.push({s:'warn',t:'Competition Cluster — 2+ competitors within 50m'});
+  else if (comp50 >= 1) flags.push({s:'warn',t:'Doorstep Competition — 1 competitor within 50m'});
+  if (txnPerSqm > 12) flags.push({s:'warn',t:`Capacity Risk — ${txnPerSqm.toFixed(1)} txn/sqm (>12)`});
+  if (multCapped) flags.push({s:'warn',t:'Quality Multiplier capped at range limit'});
+  if (apsdOverride > 0) flags.push({s:'warn',t:'APSD Override used — not comparable-derived'});
+  if (grade === 'C' || grade === 'D') flags.push({s:'warn',t:`Low Forecast Confidence — Grade ${grade}`});
+  if (compCount < 3) flags.push({s:'warn',t:'Sensitivity Extrapolated — < 3 comparables'});
+
+  STATE.forecast = {
+    startingApsd, qualityMult, tierAdj, frontAdj, trafficAdj, hotelAdj,
+    qualAdjApsd, extAdj, cannAdj, finalApsd,
+    bear, conservative, optimistic, bull, breakeven, safetyMargin,
+    grade, pts, basket, opDays, flags, apsdSource: apsdOverride > 0 ? 'User Override' : 'Comparable Median',
+  };
+
+  // Render
+  let html = `<div class="metrics-grid">
+    <div class="metric-card"><div class="value">${fmtM(finalApsd)}</div><div class="label">Final APSD (Base)</div></div>
+    <div class="metric-card"><div class="value">×${qualityMult.toFixed(2)}</div><div class="label">Quality Multiplier</div></div>
+    <div class="metric-card"><div class="value">${fmtM(breakeven)}</div><div class="label">Breakeven APSD</div></div>
+    <div class="metric-card"><div class="value">${grade}</div><div class="label">Confidence</div></div>
+  </div>`;
+
+  // Waterfall
+  html += `<h3>Adjustment Waterfall</h3><table>
+    <tr><th>Step</th><th>Factor</th><th class="text-right">APSD</th></tr>
+    <tr><td>Starting APSD (${STATE.forecast.apsdSource})</td><td></td><td class="text-right">${fmtM(startingApsd)}</td></tr>
+    <tr><td>Quality Multiplier</td><td>×${qualityMult.toFixed(3)} (Tier ×${tierAdj} | Front ×${frontAdj} | Traffic ×${trafficAdj.toFixed(2)} | Hotel ×${hotelAdj})</td><td class="text-right">${fmtM(qualAdjApsd)}</td></tr>`;
+  if (extAdj !== 0) html += `<tr><td>External Competitor</td><td>${(extAdj*100).toFixed(1)}%</td><td class="text-right">${fmtM(afterExt)}</td></tr>`;
+  if (cannAdj !== 0) html += `<tr><td>7-Eleven Cannibalization</td><td>${(cannAdj*100).toFixed(1)}%</td><td class="text-right">${fmtM(finalApsd)}</td></tr>`;
+  html += `<tr class="bold highlight"><td>Final Adjusted APSD</td><td></td><td class="text-right">${fmtM(finalApsd)}</td></tr></table>`;
+
+  // Sensitivity
+  html += `<h3>Sensitivity Scenarios</h3><table>
+    <tr><th>Scenario</th><th class="text-right">APSD</th><th class="text-right">Monthly Sales</th></tr>
+    <tr><td>Bear Case</td><td class="text-right">${fmtM(bear)}</td><td class="text-right">${fmtM(bear*30)}</td></tr>
+    <tr><td>Conservative</td><td class="text-right">${fmtM(conservative)}</td><td class="text-right">${fmtM(conservative*30)}</td></tr>
+    <tr class="bold"><td>Base Case</td><td class="text-right">${fmtM(finalApsd)}</td><td class="text-right">${fmtM(finalApsd*30)}</td></tr>
+    <tr><td>Optimistic</td><td class="text-right">${fmtM(optimistic)}</td><td class="text-right">${fmtM(optimistic*30)}</td></tr>
+    <tr><td>Bull Case</td><td class="text-right">${fmtM(bull)}</td><td class="text-right">${fmtM(bull*30)}</td></tr>
+    <tr style="border-top:2px solid var(--border)"><td>Breakeven</td><td class="text-right">${fmtM(breakeven)}</td><td class="text-right">${fmtM(breakeven*30)}</td></tr>
+  </table>`;
+
+  html += `<div style="margin-top:12px">
+    <div class="flag ${safetyMargin < 0 ? 'flag-error' : safetyMargin < 20 ? 'flag-warn' : 'flag-ok'}">
+      Safety Margin: ${safetyMargin.toFixed(1)}% — ${safetyMargin < 0 ? 'Below Breakeven' : safetyMargin < 20 ? 'Thin Margin' : safetyMargin < 40 ? 'Moderate Buffer' : 'Robust Buffer'}
+    </div>`;
+  flags.forEach(f => { html += `<div class="flag flag-${f.s}">⚠️ ${f.t}</div>`; });
+  html += `</div>`;
+
+  $('forecastResult').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 5: DCF VALUATION
+// ═══════════════════════════════════════════════════════════════
+function calcDCF() {
+  if (!STATE.investment || !STATE.forecast) {
+    $('dcfResult').innerHTML = '<div class="flag flag-warn">Complete Investment Budget and Sales Forecast first.</div>';
+    return;
+  }
+
+  const rent = num('monthlyRent');
+  const rentVat = $('rentVat').value;
+  const rentNet = rentVat === 'inclusive' ? rent / 1.10 : rent;
+  const rentGross = rentVat === 'inclusive' ? rent : rent * 1.10;
+  const escRate = num('rentEscRate') / 100;
+  const escTiming = $('rentEscTiming').value;
+  const leaseTerm = num('leaseTerm');
+  const discRate = num('discountRate') / 100;
+  const tvMult = parseInt($('tvMultiple').value);
+  const basketInfl = num('basketInflation') / 100;
+  const ratios = getRatios();
+
+  const inv = STATE.investment;
+  const fc = STATE.forecast;
+  const baseApsd = fc.finalApsd;
+  const baseBasket = fc.basket || 42000;
+  const baseCCount = num('baseCCount') || (baseBasket > 0 ? baseApsd / baseBasket : 650);
+
+  // Monthly sales & inventory
+  const monthlySalesBase = baseApsd * 30;
+  const initialInventory = monthlySalesBase * (1 - ratios.gp) / 3;
+  const totalYear0 = inv.totalInvestment + initialInventory;
+  const depreciation = inv.totalInvestment / 60; // monthly
+
+  // Rent schedule
+  function rentForYear(y) {
+    let r = rentGross;
+    if (escTiming === 'annual') {
+      r = rentGross * Math.pow(1 + escRate, y - 1);
+    } else if (escTiming === 'year3') {
+      r = y >= 3 ? rentGross * (1 + escRate) : rentGross;
+    } else if (escTiming === 'biennial') {
+      r = rentGross * Math.pow(1 + escRate, Math.floor((y - 1) / 2));
+    }
+    return r;
+  }
+
+  // APSD dual-driver
+  function ccountForYear(y) { return baseCCount * Math.min(Math.pow(1.05, y - 1), 1.10); }
+  function basketForYear(y) { return baseBasket * Math.pow(1 + basketInfl, y - 1); }
+  function apsdForYear(y) { return ccountForYear(y) * basketForYear(y); }
+
+  // Monthly EBITDA calc
+  function monthlyEbitda(apsd, monthRent) {
+    const sales = apsd * 30;
+    const gp = sales * ratios.gp;
+    const cdc = sales * ratios.cdc;
+    const oi = sales * ratios.oi;
+    const si = sales * ratios.si;
+    const grossInc = gp - cdc + oi + si;
+    const costs = sales * (ratios.labor + ratios.util + ratios.wo + ratios.opex + ratios.bom + ratios.inv + ratios.mkt + ratios.fee);
+    return grossInc - costs - monthRent;
+  }
+
+  // Monthly P&L for Year 1 (for display)
+  const yr1Sales = monthlySalesBase;
+  const yr1PL = {
+    sales: yr1Sales,
+    cogs: yr1Sales * (1 - ratios.gp),
+    gp: yr1Sales * ratios.gp,
+    cdc: yr1Sales * ratios.cdc,
+    oi: yr1Sales * ratios.oi,
+    si: yr1Sales * ratios.si,
+    grossInc: yr1Sales * ratios.gp - yr1Sales * ratios.cdc + yr1Sales * ratios.oi + yr1Sales * ratios.si,
+    labor: yr1Sales * ratios.labor,
+    util: yr1Sales * ratios.util,
+    wo: yr1Sales * ratios.wo,
+    opex: yr1Sales * ratios.opex,
+    bom: yr1Sales * ratios.bom,
+    inv: yr1Sales * ratios.inv,
+    mkt: yr1Sales * ratios.mkt,
+    fee: yr1Sales * ratios.fee,
+    rent: rentGross,
+  };
+  yr1PL.totalOpex = yr1PL.labor + yr1PL.util + yr1PL.wo + yr1PL.opex + yr1PL.bom + yr1PL.inv + yr1PL.mkt + yr1PL.fee;
+  yr1PL.ebitda = yr1PL.grossInc - yr1PL.totalOpex - yr1PL.rent;
+  yr1PL.ebit = yr1PL.ebitda - depreciation;
+
+  // Multi-year
+  const years = [];
+  let cumEbitda = 0;
+  const annualEbitdas = [];
+  for (let y = 1; y <= leaseTerm; y++) {
+    const yrApsd = apsdForYear(y);
+    const yrRent = rentForYear(y);
+    const yrMonthlyEbitda = monthlyEbitda(yrApsd, yrRent);
+    const yrAnnualEbitda = yrMonthlyEbitda * 12;
+    cumEbitda += yrAnnualEbitda;
+    annualEbitdas.push(yrAnnualEbitda);
+    years.push({
+      year: y,
+      ccount: ccountForYear(y),
+      basket: basketForYear(y),
+      apsd: yrApsd,
+      annualRent: yrRent * 12,
+      monthlyEbitda: yrMonthlyEbitda,
+      annualEbitda: yrAnnualEbitda,
+      cumEbitda: cumEbitda,
+      cumNet: cumEbitda - totalYear0,
+    });
+  }
+
+  // Payback
+  const paybackYear = years.find(y => y.cumNet >= 0);
+  const simplePaybackMonths = annualEbitdas[0] > 0 ? totalYear0 / (annualEbitdas[0] / 12) : Infinity;
+
+  // Discounted
+  let discCumul = 0;
+  let discPaybackYear = null;
+  const discCFs = annualEbitdas.map((cf, i) => {
+    const pv = cf / Math.pow(1 + discRate, i + 1);
+    discCumul += pv;
+    if (discCumul >= totalYear0 && discPaybackYear === null) discPaybackYear = i + 1;
+    return pv;
+  });
+
+  // Terminal value
+  const finalEbitda = annualEbitdas[annualEbitdas.length - 1];
+  const tv = finalEbitda * tvMult;
+  const tvPV = tv / Math.pow(1 + discRate, leaseTerm);
+
+  // NPV
+  const pvSum = discCFs.reduce((a, b) => a + b, 0);
+  const npvExclTV = pvSum - totalYear0;
+  const npvInclTV = npvExclTV + tvPV;
+
+  // IRR via bisection
+  function calcIRR() {
+    const cfs = [...annualEbitdas];
+    cfs[cfs.length - 1] += tv;
+    function npvAt(r) {
+      return cfs.reduce((s, cf, i) => s + cf / Math.pow(1 + r, i + 1), 0) - totalYear0;
+    }
+    if (npvAt(0) < 0) return null;
+    let lo = 0, hi = 10;
+    if (npvAt(hi) > 0) return '>1000%';
+    for (let i = 0; i < 1000; i++) {
+      const mid = (lo + hi) / 2;
+      if (npvAt(mid) > 0) lo = mid; else hi = mid;
+      if (hi - lo < 1e-6) break;
+    }
+    return ((lo + hi) / 2 * 100).toFixed(1);
+  }
+  const irr = calcIRR();
+  const ebitdaPct = yr1Sales > 0 ? (yr1PL.ebitda / yr1Sales * 100) : 0;
+
+  // Sensitivity by scenario
+  function scenarioMetrics(apsd) {
+    const me = monthlyEbitda(apsd, rentGross);
+    const ae = me * 12;
+    const ep = yr1Sales > 0 ? me / (apsd * 30) * 100 : 0;
+    const pb = me > 0 ? totalYear0 / me : Infinity;
+    // Simple NPV for this scenario
+    const cfs2 = [];
+    for (let y = 1; y <= leaseTerm; y++) {
+      const scale = apsd / baseApsd;
+      const ya = apsdForYear(y) * scale / apsdForYear(1); // relative scaling
+      cfs2.push(monthlyEbitda(apsd * Math.min(Math.pow(1.05, y-1), 1.10) / Math.min(Math.pow(1.05, 0), 1.10) * Math.pow(1+basketInfl, y-1), rentForYear(y)) * 12);
+    }
+    const pv2 = cfs2.reduce((s, cf, i) => s + cf / Math.pow(1 + discRate, i + 1), 0);
+    const fE = cfs2[cfs2.length-1];
+    const tv2pv = (fE * tvMult) / Math.pow(1 + discRate, leaseTerm);
+    return { apsd, ebitdaM: me, ebitdaPct: ep, payback: pb, npvExcl: pv2 - totalYear0, npvIncl: pv2 - totalYear0 + tv2pv };
+  }
+  const scenarios = [
+    { label: 'Bear Case', ...scenarioMetrics(fc.bear) },
+    { label: 'Conservative', ...scenarioMetrics(fc.conservative) },
+    { label: 'Base Case', ...scenarioMetrics(fc.finalApsd) },
+    { label: 'Optimistic', ...scenarioMetrics(fc.optimistic) },
+    { label: 'Bull Case', ...scenarioMetrics(fc.bull) },
+  ];
+
+  STATE.dcf = {
+    totalYear0, npvExclTV, npvInclTV, irr, simplePaybackMonths,
+    discPaybackYear, ebitdaPct, yr1PL, years, scenarios,
+    tvPV, tv, finalEbitda, depreciation, initialInventory,
+  };
+
+  // ── Render ──
+  let html = `<div class="metrics-grid">
+    <div class="metric-card"><div class="value">${fmtB(npvInclTV)}</div><div class="label">NPV (incl. TV)</div></div>
+    <div class="metric-card"><div class="value">${irr !== null ? irr + '%' : 'N/A'}</div><div class="label">IRR</div></div>
+    <div class="metric-card"><div class="value">${simplePaybackMonths < 999 ? simplePaybackMonths.toFixed(1) + 'mo' : 'N/A'}</div><div class="label">Simple Payback</div></div>
+    <div class="metric-card"><div class="value">${ebitdaPct.toFixed(1)}%</div><div class="label">EBITDA% (Yr1)</div></div>
+  </div>`;
+
+  // Year 0
+  html += `<h3>Year 0 Investment</h3><table>
+    <tr><td>Equipment & Fit-out Capex</td><td class="text-right">${fmtVND(inv.totalInvestment)}</td></tr>
+    <tr><td>Initial Inventory (1/3 mo at cost)</td><td class="text-right">${fmtVND(initialInventory)}</td></tr>
+    <tr class="bold"><td>Total Year 0 Outflow</td><td class="text-right">${fmtVND(totalYear0)}</td></tr>
+  </table>`;
+
+  // Monthly P&L
+  html += `<h3>Monthly P&L — Year 1 Base Case</h3><table>
+    <tr><th>Line Item</th><th class="text-right">VND/month</th><th class="text-right">% Sales</th></tr>
+    <tr class="bold"><td>Sales</td><td class="text-right">${fmtVND(yr1PL.sales)}</td><td class="text-right">100.0%</td></tr>
+    <tr><td>COGS</td><td class="text-right">(${fmtVND(yr1PL.cogs)})</td><td class="text-right">${((1-ratios.gp)*100).toFixed(1)}%</td></tr>
+    <tr class="bold"><td>Gross Profit</td><td class="text-right">${fmtVND(yr1PL.gp)}</td><td class="text-right">${(ratios.gp*100).toFixed(1)}%</td></tr>
+    <tr><td>CDC Logistics</td><td class="text-right">(${fmtVND(yr1PL.cdc)})</td><td class="text-right">${(ratios.cdc*100).toFixed(1)}%</td></tr>
+    <tr><td>Other Income</td><td class="text-right">${fmtVND(yr1PL.oi)}</td><td class="text-right">${(ratios.oi*100).toFixed(1)}%</td></tr>
+    <tr><td>Service Income</td><td class="text-right">${fmtVND(yr1PL.si)}</td><td class="text-right">${(ratios.si*100).toFixed(1)}%</td></tr>
+    <tr class="bold"><td>Gross Income</td><td class="text-right">${fmtVND(yr1PL.grossInc)}</td><td class="text-right">${(yr1PL.grossInc/yr1PL.sales*100).toFixed(1)}%</td></tr>
+    <tr><td>Store Labor</td><td class="text-right">(${fmtVND(yr1PL.labor)})</td><td class="text-right">${(ratios.labor*100).toFixed(1)}%</td></tr>
+    <tr><td>Utilities</td><td class="text-right">(${fmtVND(yr1PL.util)})</td><td class="text-right">${(ratios.util*100).toFixed(1)}%</td></tr>
+    <tr><td>Write-off</td><td class="text-right">(${fmtVND(yr1PL.wo)})</td><td class="text-right">${(ratios.wo*100).toFixed(1)}%</td></tr>
+    <tr><td>OpEx</td><td class="text-right">(${fmtVND(yr1PL.opex)})</td><td class="text-right">${(ratios.opex*100).toFixed(1)}%</td></tr>
+    <tr><td>BOM Variance</td><td class="text-right">(${fmtVND(yr1PL.bom)})</td><td class="text-right">${(ratios.bom*100).toFixed(1)}%</td></tr>
+    <tr><td>Inv Variance</td><td class="text-right">(${fmtVND(yr1PL.inv)})</td><td class="text-right">${(ratios.inv*100).toFixed(1)}%</td></tr>
+    <tr><td>Marketing</td><td class="text-right">(${fmtVND(yr1PL.mkt)})</td><td class="text-right">${(ratios.mkt*100).toFixed(1)}%</td></tr>
+    <tr><td>7E Fee</td><td class="text-right">(${fmtVND(yr1PL.fee)})</td><td class="text-right">3.0%</td></tr>
+    <tr><td>Rent</td><td class="text-right">(${fmtVND(yr1PL.rent)})</td><td class="text-right">${(yr1PL.rent/yr1PL.sales*100).toFixed(1)}%</td></tr>
+    <tr class="bold highlight"><td>Store EBITDA</td><td class="text-right">${fmtVND(yr1PL.ebitda)}</td><td class="text-right">${ebitdaPct.toFixed(1)}%</td></tr>
+    <tr><td>Depreciation</td><td class="text-right">(${fmtVND(depreciation)})</td><td class="text-right">${(depreciation/yr1PL.sales*100).toFixed(1)}%</td></tr>
+    <tr class="bold"><td>Store EBIT</td><td class="text-right">${fmtVND(yr1PL.ebit)}</td><td class="text-right">${(yr1PL.ebit/yr1PL.sales*100).toFixed(1)}%</td></tr>
+  </table>`;
+
+  // Multi-year
+  html += `<h3>Multi-Year Cash Flow</h3><table>
+    <tr><th>Year</th><th class="text-right">C-Count</th><th class="text-right">Basket</th><th class="text-right">APSD</th><th class="text-right">Annual Rent</th><th class="text-right">Mo. EBITDA</th><th class="text-right">Annual EBITDA</th><th class="text-right">Cumul. Net</th></tr>
+    <tr style="background:#f9fafb"><td>0</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="text-right" style="color:var(--red)">(${fmtVND(totalYear0)})</td></tr>`;
+  years.forEach(y => {
+    const isPayback = paybackYear && y.year === paybackYear.year;
+    html += `<tr class="${isPayback ? 'highlight' : ''}">
+      <td>${y.year}</td>
+      <td class="text-right">${Math.round(y.ccount)}</td>
+      <td class="text-right">${fmtNo(Math.round(y.basket))}</td>
+      <td class="text-right">${fmtM(y.apsd)}</td>
+      <td class="text-right">${fmtVND(y.annualRent)}</td>
+      <td class="text-right">${fmtVND(y.monthlyEbitda)}</td>
+      <td class="text-right">${fmtVND(y.annualEbitda)}</td>
+      <td class="text-right" style="color:${y.cumNet >= 0 ? 'var(--sev)' : 'var(--red)'}">${fmtVND(y.cumNet)}</td>
+    </tr>`;
+  });
+  html += `</table>`;
+
+  // DCF Summary
+  html += `<h3>DCF Summary</h3><table>
+    <tr><td>Discount Rate</td><td class="text-right">${(discRate*100).toFixed(1)}%</td></tr>
+    <tr><td>Terminal Value (${tvMult}x final EBITDA)</td><td class="text-right">${fmtVND(tv)}</td></tr>
+    <tr><td>PV of Terminal Value</td><td class="text-right">${fmtVND(tvPV)}</td></tr>
+    <tr class="bold"><td>NPV (excl. TV)</td><td class="text-right">${fmtVND(npvExclTV)}</td></tr>
+    <tr class="bold highlight"><td>NPV (incl. TV)</td><td class="text-right">${fmtVND(npvInclTV)}</td></tr>
+    <tr class="bold"><td>IRR</td><td class="text-right">${irr !== null ? irr + '%' : 'Not calculable'}</td></tr>
+    <tr><td>Simple Payback</td><td class="text-right">${simplePaybackMonths < 999 ? simplePaybackMonths.toFixed(1) + ' months' : 'Not within lease'}</td></tr>
+    <tr><td>Discounted Payback</td><td class="text-right">${discPaybackYear ? 'Year ' + discPaybackYear : 'Not within lease'}</td></tr>
+  </table>`;
+
+  // Scenario sensitivity
+  html += `<h3>NPV Sensitivity by Scenario</h3><table>
+    <tr><th>Scenario</th><th class="text-right">APSD</th><th class="text-right">Mo. EBITDA</th><th class="text-right">EBITDA%</th><th class="text-right">Payback</th><th class="text-right">NPV (incl. TV)</th></tr>`;
+  scenarios.forEach((s, i) => {
+    const cls = i === 2 ? 'bold highlight' : '';
+    html += `<tr class="${cls}">
+      <td>${s.label}</td>
+      <td class="text-right">${fmtM(s.apsd)}</td>
+      <td class="text-right">${fmtVND(s.ebitdaM)}</td>
+      <td class="text-right">${s.ebitdaPct.toFixed(1)}%</td>
+      <td class="text-right">${s.payback < 999 ? s.payback.toFixed(0) + 'mo' : 'N/A'}</td>
+      <td class="text-right">${fmtVND(s.npvIncl)}</td>
+    </tr>`;
+  });
+  html += `</table>`;
+
+  // TV sensitivity
+  html += `<h3>Terminal Value Sensitivity</h3><table>
+    <tr><th>Multiple</th><th class="text-right">TV (undiscounted)</th><th class="text-right">PV of TV</th><th class="text-right">NPV</th></tr>`;
+  [3,4,5].forEach(m => {
+    const t = finalEbitda * m;
+    const tpv = t / Math.pow(1 + discRate, leaseTerm);
+    const n = npvExclTV + tpv;
+    const cls = m === tvMult ? 'bold' : '';
+    html += `<tr class="${cls}"><td>${m}x${m===tvMult?' (Base)':''}</td><td class="text-right">${fmtVND(t)}</td><td class="text-right">${fmtVND(tpv)}</td><td class="text-right">${fmtVND(n)}</td></tr>`;
+  });
+  html += `</table>`;
+
+  $('dcfResult').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 6: RECOMMENDATION
+// ═══════════════════════════════════════════════════════════════
+function calcRecommendation() {
+  if (!STATE.dcf || !STATE.forecast) {
+    $('recommendationResult').innerHTML = '<div class="flag flag-warn">Complete DCF Valuation first.</div>';
+    return;
+  }
+
+  const d = STATE.dcf;
+  const f = STATE.forecast;
+  const aboveBreakeven = f.finalApsd > f.breakeven;
+  const npvPositive = d.npvInclTV > 0;
+  const ebitdaPositive = d.yr1PL.ebitda > 0;
+  const paybackOk = d.simplePaybackMonths < 36;
+  const paybackConditional = d.simplePaybackMonths < 48;
+  const irrVal = d.irr !== null ? parseFloat(d.irr) : -1;
+
+  let verdict, verdictClass, verdictEmoji;
+  if (aboveBreakeven && npvPositive && ebitdaPositive && paybackOk) {
+    verdict = 'GO'; verdictClass = 'verdict-go'; verdictEmoji = '🟢';
+  } else if (aboveBreakeven && npvPositive && ebitdaPositive && paybackConditional) {
+    verdict = 'CONDITIONAL'; verdictClass = 'verdict-conditional'; verdictEmoji = '🟡';
+  } else if (!aboveBreakeven || !npvPositive || !ebitdaPositive || d.simplePaybackMonths >= 48 || d.irr === null) {
+    verdict = 'NO-GO'; verdictClass = 'verdict-nogo'; verdictEmoji = '🔴';
+  } else {
+    verdict = 'CONDITIONAL'; verdictClass = 'verdict-conditional'; verdictEmoji = '🟡';
+  }
+
+  const address = $('address').value || 'Proposed Site';
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  let html = `<div style="text-align:center;margin:24px 0">
+    <div class="verdict ${verdictClass}">${verdictEmoji} ${verdict}</div>
+    <div style="margin-top:8px;font-size:14px;color:var(--muted)">${address} — ${today}</div>
+  </div>`;
+
+  html += `<div class="metrics-grid">
+    <div class="metric-card"><div class="value">${fmtB(d.npvInclTV)}</div><div class="label">NPV (incl. TV)</div></div>
+    <div class="metric-card"><div class="value">${d.irr !== null ? d.irr + '%' : 'N/A'}</div><div class="label">IRR</div></div>
+    <div class="metric-card"><div class="value">${d.simplePaybackMonths < 999 ? d.simplePaybackMonths.toFixed(0) + 'mo' : 'N/A'}</div><div class="label">Simple Payback</div></div>
+    <div class="metric-card"><div class="value">${d.ebitdaPct.toFixed(1)}%</div><div class="label">EBITDA%</div></div>
+    <div class="metric-card"><div class="value">${fmtM(f.finalApsd)}</div><div class="label">Base APSD</div></div>
+    <div class="metric-card"><div class="value">${f.safetyMargin.toFixed(0)}%</div><div class="label">Safety Margin</div></div>
+  </div>`;
+
+  // Decision basis
+  html += `<table>
+    <tr><th>Criteria</th><th>Threshold</th><th>Actual</th><th>Status</th></tr>
+    <tr><td>Base APSD vs Breakeven</td><td>Above breakeven</td><td>${fmtM(f.finalApsd)} vs ${fmtM(f.breakeven)}</td><td>${aboveBreakeven ? '✅' : '❌'}</td></tr>
+    <tr><td>NPV (incl. TV)</td><td>> 0</td><td>${fmtVND(d.npvInclTV)}</td><td>${npvPositive ? '✅' : '❌'}</td></tr>
+    <tr><td>EBITDA</td><td>> 0</td><td>${fmtVND(d.yr1PL.ebitda)}/mo</td><td>${ebitdaPositive ? '✅' : '❌'}</td></tr>
+    <tr><td>Simple Payback</td><td>< 36 months</td><td>${d.simplePaybackMonths < 999 ? d.simplePaybackMonths.toFixed(1) + ' months' : 'N/A'}</td><td>${paybackOk ? '✅' : paybackConditional ? '🟡' : '❌'}</td></tr>
+    <tr><td>IRR</td><td>> 15%</td><td>${d.irr !== null ? d.irr + '%' : 'N/A'}</td><td>${irrVal > 15 ? '✅' : irrVal > 10 ? '🟡' : '❌'}</td></tr>
+    <tr><td>Forecast Confidence</td><td>≥ B</td><td>Grade ${f.grade} (${f.pts}/12 pts)</td><td>${f.grade <= 'B' ? '✅' : '🟡'}</td></tr>
+  </table>`;
+
+  // Risk flags
+  if (f.flags.length > 0) {
+    html += `<h3 style="margin-top:20px">Risk Flags</h3>`;
+    f.flags.forEach(fl => { html += `<div class="flag flag-${fl.s}">⚠️ ${fl.t}</div>`; });
+  }
+
+  // Rationale
+  html += `<h3 style="margin-top:20px">Rationale</h3><div class="card" style="background:#f9fafb;border:none;margin-top:8px">`;
+  if (verdict === 'GO') {
+    html += `<p>This location meets all investment criteria. Base Case APSD of ${fmtM(f.finalApsd)} provides a ${f.safetyMargin.toFixed(0)}% safety margin above breakeven (${fmtM(f.breakeven)}). NPV of ${fmtB(d.npvInclTV)} with ${d.irr}% IRR indicates strong returns above the 10% hurdle rate. Simple payback of ${d.simplePaybackMonths.toFixed(1)} months is within the 36-month threshold.</p>`;
+  } else if (verdict === 'CONDITIONAL') {
+    html += `<p>This location shows potential but has conditions that must be met. Base Case APSD of ${fmtM(f.finalApsd)} is ${aboveBreakeven ? 'above' : 'below'} breakeven (${fmtM(f.breakeven)}). NPV is ${fmtB(d.npvInclTV)}. ${d.simplePaybackMonths > 36 ? 'Payback period exceeds 36 months — consider rent negotiation to improve economics.' : ''} ${f.grade >= 'C' ? 'Forecast confidence is low — additional comparable data would strengthen the projection.' : ''}</p>`;
+  } else {
+    html += `<p>This location does not meet investment criteria. ${!aboveBreakeven ? 'Base Case APSD falls below breakeven — the store would lose money at forecast sales levels.' : ''} ${!npvPositive ? 'NPV is negative — the investment does not generate sufficient returns.' : ''} ${d.irr === null ? 'IRR is not calculable — projected cash flows do not recover the investment.' : ''}</p>`;
+  }
+  html += `</div>`;
+
+  html += `<div style="margin-top:20px;padding:16px;background:#f3f4f6;border-radius:8px;font-size:12px;color:var(--muted)">
+    <strong>Disclaimer:</strong> This projection uses ${num('compCount') > 0 ? 'comparable store data' : 'network fallback ratios'}. Discount rate: ${(num('discountRate'))}% p.a. Sales days: 360/year. C-Count ramps +5%/year capped at +10% from Year 3. Basket inflates at ${num('basketInflation')}%/year. Initial inventory included in Year 0. Terminal value: ${$('tvMultiple').value}x exit multiple. 7E Fee hardcoded at 3.0%.
+  </div>`;
+
+  $('recommendationResult').innerHTML = html;
+}
+
+function printReport() {
+  window.print();
+}
+
+// ── Vietnam Administrative Data ──
+const VN_ADMIN = {
+  HCM: {
+    name: 'Ho Chi Minh City',
+    streets: ['Nguyen Hue','Le Loi','Dong Khoi','Nam Ky Khoi Nghia','Pham Ngoc Thach','Vo Van Tan','Le Van Sy','Cach Mang Thang Tam','Dien Bien Phu','Hai Ba Trung','Nguyen Dinh Chieu','Bui Vien','Pham Ngu Lao','De Tham','Le Thanh Ton','Thai Van Lung','Pasteur','Ly Tu Trong','Nguyen Du','Truong Dinh','Nguyen Van Linh','Phan Xich Long','Hoang Dieu','Nguyen Trai','Truong Cong Dinh','Vo Thi Sau','Xo Viet Nghe Tinh','Phan Dang Luu','Nguyen Gia Tri','Bach Dang','Hanoi Highway','Xa Lo Ha Noi','Pham Van Dong','Nguyen Van Cu','Tran Hung Dao','Tran Phu','Ly Thuong Kiet','Nguyen Thi Minh Khai','CMT8'],
+    districts: [
+      { name: 'District 1', wards: ['Ben Nghe','Ben Thanh','Co Giang','Cau Kho','Cau Ong Lanh','Da Kao','My Duc','Nguyen Cu Trinh','Nguyen Thai Binh','Pham Ngu Lao','Tan Dinh','Vo Thi Sau'] },
+      { name: 'District 2 (Thu Duc)', wards: ['An Khanh','An Loi Dong','An Phu','Binh An','Binh Khanh','Binh Trung Dong','Binh Trung Tay','Cat Lai','Thanh My Loi','Thu Thiem'] },
+      { name: 'District 3', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Vo Thi Sau'] },
+      { name: 'District 4', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 6','Ward 8','Ward 9','Ward 10','Ward 13','Ward 14','Ward 15','Ward 16','Ward 18'] },
+      { name: 'District 5', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15'] },
+      { name: 'District 6', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14'] },
+      { name: 'District 7', wards: ['Binh Thuan','Phu My','Phu Thuan','Tan Hung','Tan Kieng','Tan Phong','Tan Phu','Tan Quy','Tan Thuan Dong','Tan Thuan Tay','Tay Thanh'] },
+      { name: 'District 8', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15','Ward 16'] },
+      { name: 'District 9 (Thu Duc)', wards: ['Hiep Phu','Long Binh','Long Phuoc','Long Thanh My','Long Truong','Phu Huu','Phuoc Binh','Phuoc Long A','Phuoc Long B','Tang Nhon Phu A','Tang Nhon Phu B','Truong Thanh'] },
+      { name: 'District 10', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15'] },
+      { name: 'District 11', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15','Ward 16'] },
+      { name: 'District 12', wards: ['An Phu Dong','Dong Hung Thuan','Hiep Thanh','Tan Chanh Hiep','Tan Hung Thuan','Tan Thoi Hiep','Tan Thoi Nhat','Thanh Loc','Thanh Xuan','Thoi An','Truong Thanh'] },
+      { name: 'Binh Thanh', wards: ['Ward 1','Ward 2','Ward 3','Ward 5','Ward 6','Ward 7','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15','Ward 17','Ward 19','Ward 21','Ward 22','Ward 24','Ward 25','Ward 26','Ward 27','Ward 28'] },
+      { name: 'Go Vap', wards: ['Ward 1','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15','Ward 16','Ward 17'] },
+      { name: 'Phu Nhuan', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15','Ward 16','Ward 17'] },
+      { name: 'Tan Binh', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Ward 8','Ward 9','Ward 10','Ward 11','Ward 12','Ward 13','Ward 14','Ward 15'] },
+      { name: 'Tan Phu', wards: ['Hiep Tan','Hoa Thanh','Phu Thanh','Phu Tho Hoa','Phu Trung','Son Ky','Tan Quy','Tan Son Nhi','Tan Thanh Hiep','Tan Thoi Hoa','Tay Thanh'] },
+      { name: 'Thu Duc City', wards: ['Binh Chieu','Binh Tho','Hiep Binh Chanh','Hiep Binh Phuoc','Linh Chieu','Linh Dong','Linh Tay','Linh Trung','Linh Xuan','Tam Binh','Tam Phu','Thu Duc'] },
+      { name: 'Binh Chanh', wards: ['An Phu Tay','Binh Chanh','Binh Hung','Binh Loi','Da Phuoc','Hung Long','Le Minh Xuan','Phong Phu','Quy Duc','Tan Kien','Tan Nhat','Tan Quy Tay','Tan Tuc','Vinh Loc A','Vinh Loc B'] },
+      { name: 'Can Gio', wards: ['An Thanh Tay','Binh Khanh','Can Thanh','Long Hoa','Ly Nhon','Tam Thon Hiep','Thanh An'] },
+      { name: 'Cu Chi', wards: ['An Nhon Tay','An Phu','Binh My','Cu Chi','Hoa Phu','Nhuan Duc','Pham Van Coi','Phu Hoa Dong','Phu My Hung','Tan An Hoi','Tan Phu Trung','Tan Thanh Dong','Tan Thanh Tay','Thai My','Trung An','Trung Lap Ha','Trung Lap Thuong'] },
+      { name: 'Hoc Mon', wards: ['Ba Diem','Dong Thanh','Nhi Binh','Tan Hiep','Tan Thanh','Tan Xuan','Thoi Tam Thon','Trung Chanh','Xuan Thoi Dong','Xuan Thoi Son','Xuan Thoi Thuong'] },
+      { name: 'Nha Be', wards: ['Hiep Phuoc','Long Thoi','Nhon Duc','Phu Xuan','Phuoc Kien','Phuoc Loc'] },
+    ]
+  },
+  HN: {
+    name: 'Hanoi',
+    streets: ['Hang Bac','Hang Gai','Hang Dao','Pho Hue','Ba Trieu','Nguyen Du','Trang Tien','Dinh Tien Hoang','Ly Thuong Kiet','Hai Ba Trung','Giai Phong','Nguyen Hue','Truc Bach','Kim Ma','Lang Ha','Khuong Thuong','Tay Son','Nguyen Trai','Le Duan','Hang Bong','Chua Boc','Thai Ha','Doi Can','Hoang Dieu','Lieu Giai','Nguyen Chi Thanh','Tran Duy Hung','Le Van Luong'],
+    districts: [
+      { name: 'Hoan Kiem', wards: ['Cua Dong','Cua Nam','Dong Xuan','Hang Bo','Hang Bom','Hang Bong','Hang Buom','Hang Dao','Hang Gai','Hang Ma','Hang Trong','Hoan Kiem','Ly Thai To','Phan Chu Trinh','Tran Hung Dao'] },
+      { name: 'Ba Dinh', wards: ['Cong Vi','Dien Bien','Doi Can','Giang Vo','Kim Ma','Lieu Giai','Ngoc Ha','Ngoc Khanh','Nguyen Trung Truc','Phuc Xa','Quan Thanh','Thuong Thanh','Truc Bach','Vinh Phuc'] },
+      { name: 'Dong Da', wards: ['Cat Linh','Hang Bot','Kham Thien','Khuong Thuong','Khuong Trung','Lang Ha','Lang Thuong','Nam Dong','O Cho Dua','Phuong Lien','Phuong Mai','Quoc Tu Giam','Thinh Quang','Tho Quan','Trung Liet','Trung Phung','Trung Tu','Van Chuong'] },
+      { name: 'Hai Ba Trung', wards: ['Bach Khoa','Bach Mai','Cau Den','Dong Tam','Le Dai Hanh','Minh Khai','Nguyen Du','Pho Hue','Quynh Loi','Quynh Mai','Thanh Luong','Thanh Nhan','Truong Dinh','Tuong Mai','Vinh Tuy'] },
+      { name: 'Tay Ho', wards: ['Buoi','Nhat Tan','Phu Thuong','Quang An','Quang Ba','Tay Ho','Xuan La','Yen Phu'] },
+      { name: 'Cau Giay', wards: ['Dich Vong','Dich Vong Hau','Mai Dich','My Dinh I','My Dinh II','Nghia Do','Nghia Tan','Quan Hoa','Trung Hoa','Yen Hoa'] },
+      { name: 'Thanh Xuan', wards: ['Ha Dinh','Khuong Dinh','Khuong Mai','Khuong Trung','Kim Giang','Nhan Chinh','Phuong Liet','Thanh Xuan Bac','Thanh Xuan Nam','Thanh Xuan Trung','Thuong Dinh'] },
+      { name: 'Hoang Mai', wards: ['Dai Kim','Dinh Cong','Giap Bat','Hoang Liet','Hoang Van Thu','Linh Dam','Mai Dong','Tan Mai','Thanh Tri','Thinh Liet','Tran Phu','Tuong Mai','Yen So'] },
+      { name: 'Long Bien', wards: ['Bo De','Cau Ngum','Duc Giang','Gia Thuy','Giang Bien','Long Bien','Ngoc Lam','Ngoc Thuy','Phuc Dong','Phuc Loi','Sai Dong','Thanh Tri','Thuong Thanh','Viet Hung'] },
+      { name: 'Nam Tu Liem', wards: ['Co Nhue 1','Co Nhue 2','Dai Mo','My Dinh 1','My Dinh 2','Phu Do','Phuong Canh','Tay Mo','Trung Van','Xuan Phuong'] },
+      { name: 'Bac Tu Liem', wards: ['Co Nhue 1','Co Nhue 2','Dong Ngac','Duc Thang','Lien Mac','Minh Khai','Phu Dien','Tay Tuu','Thanh Xuan','Thuong Cat','Xuan Dinh','Xuan Tao'] },
+      { name: 'Ha Dong', wards: ['Bien Giang','Dong Mai','Ha Cau','Kieng Yen','La Khe','Mo Lao','Nguyen Trai','Phu La','Phu Lam','Phu Loi','Phu Nghia','Phuc La','Quang Trung','Van Quan','Yen Nghia'] },
+    ]
+  },
+  BD: {
+    name: 'Binh Duong',
+    streets: ['Binh Duong Avenue','Le Hong Phong','Nguyen Van Troi','CMT8','Hung Vuong','Nguyen An Ninh','Phu Loi','Nguyen Thi Minh Khai','Tran Hung Dao','Le Loi','Nguyen Hue','DT741','DT743'],
+    districts: [
+      { name: 'Thu Dau Mot City', wards: ['Chanh My','Chanh Nghia','Hiep An','Hiep Thanh','Hoa Phu','Phu Cu','Phu My','Phu Tan','Phu Thu','Tan An','Tuong Binh Hiep'] },
+      { name: 'Di An City', wards: ['An Binh','Binh An','Binh Thang','Di An','Dong Hoa','Tan Binh','Tan Dong Hiep'] },
+      { name: 'Thuan An City', wards: ['An Phu','An Thanh','Binh Chuan','Binh Hoa','Binh Nham','Hung Dinh','Lai Thieu','Loi Thieu','Thuan Giao','Vinh Phu'] },
+      { name: 'Ben Cat City', wards: ['An Dien','An Tay','Ben Cat','Chanh Phu Hoa','Hoa Loi','My Phuoc','Tan Dinh','Thoi Hoa'] },
+      { name: 'Bau Bang District', wards: ['Cay Truong II','Hung Hoa','Lai Hung','Long Nguyen','Tan Hung','Tru Van Tho'] },
+    ]
+  },
+  LA: {
+    name: 'Long An',
+    streets: ['Hung Vuong','Le Duan','Nguyen Hue','Tran Hung Dao','CMT8','Nguyen Dinh Chieu','Nguyen Van Linh','Tran Phu'],
+    districts: [
+      { name: 'Tan An City', wards: ['Ward 1','Ward 2','Ward 3','Ward 4','Ward 5','Ward 6','Ward 7','Binh Tam','Huong Ngan','Khanh Hau','Loi Binh Nhon','My Hoa','Nhon Thanh Trung','Tan Khanh','Tan Thanh'] },
+      { name: 'Ben Luc District', wards: ['Ben Luc','Binh Duc','Long Hiep','Long Nhut','My Yen','Nhon Thanh','Phuoc Loi','Tan Buu','Thanh Duc','Thanh Hoa','Thanh Loi','Thanh Phu'] },
+      { name: 'Can Giuoc District', wards: ['Can Giuoc','Long An','Long Dinh','Long Hau','Long Thanh','My Loc','Phuoc Lam','Phuoc Ly','Phuoc Vinh Dong','Tan Kim','Tan Thanh','Thanh Phuoc','Truong Binh'] },
+      { name: 'Duc Hoa District', wards: ['An Ninh Dong','An Ninh Tay','Buu Long','Duc Hoa','Duc Hoa Dong','Duc Hoa Ha','Duc Hoa Thuong','Duc Lap Ha','Duc Lap Thuong','Hoa Khanh Dong','Hoa Khanh Nam','Hoa Khanh Tay','Tan My','Tan Phu'] },
+    ]
+  }
+};
+
+// ── Combobox Logic ──
+const _comboItems = { district: [], ward: [] };
+const _closeTimers = {};
+
+function onCityChange() {
+  const city = $('city').value;
+  const cityData = VN_ADMIN[city] || { districts: [], streets: [] };
+  _comboItems.district = cityData.districts.map(d => d.name);
+  _comboItems.ward = [];
+  $('districtSearch').value = ''; $('district').value = '';
+  $('wardSearch').value = '';     $('ward').value = '';
+  _renderList('district', _comboItems.district);
+  _renderList('ward', []);
+  // Update street suggestions
+  const dl = $('streetSuggestions');
+  dl.innerHTML = (cityData.streets || []).map(s => `<option value="${s}">`).join('');
+  // Refresh fallback ratios
+  loadFallbackRatios();
+}
+
+function onDistrictChange(name) {
+  const city = $('city').value;
+  const cityData = VN_ADMIN[city] || { districts: [] };
+  const dist = cityData.districts.find(d => d.name === name);
+  _comboItems.ward = dist ? dist.wards : [];
+  $('wardSearch').value = ''; $('ward').value = '';
+  _renderList('ward', _comboItems.ward);
+}
+
+function _renderList(field, items) {
+  const list = $(field + 'List');
+  list.innerHTML = items.length
+    ? items.map(v => `<div class="combo-option" onmousedown="selectCombo('${field}','${v.replace(/'/g,"\\'")}')">${v}</div>`).join('')
+    : '<div class="combo-empty">No options available</div>';
+}
+
+function filterCombo(field) {
+  const q = $(field + 'Search').value.toLowerCase();
+  const all = _comboItems[field];
+  const shown = q ? all.filter(v => v.toLowerCase().includes(q)) : all;
+  const list = $(field + 'List');
+  list.classList.add('open');
+  list.innerHTML = shown.length
+    ? shown.map(v => `<div class="combo-option" onmousedown="selectCombo('${field}','${v.replace(/'/g,"\\'")}')">${v}</div>`).join('')
+    : '<div class="combo-empty">No match found</div>';
+}
+
+function openCombo(field) {
+  _renderList(field, _comboItems[field]);
+  $(field + 'List').classList.add('open');
+}
+
+function toggleCombo(field) {
+  const list = $(field + 'List');
+  if (list.classList.contains('open')) { list.classList.remove('open'); }
+  else { openCombo(field); $(field + 'Search').focus(); }
+}
+
+function delayCloseCombo(field) {
+  _closeTimers[field] = setTimeout(() => $(field + 'List').classList.remove('open'), 200);
+}
+
+function selectCombo(field, value) {
+  clearTimeout(_closeTimers[field]);
+  $(field + 'Search').value = value;
+  $(field).value = value;
+  $(field + 'List').classList.remove('open');
+  if (field === 'district') onDistrictChange(value);
+}
+
+// Init on load
+onCityChange();
+</script>
+</body>
+</html>
+<!-- sync -->
+
+ 
+
