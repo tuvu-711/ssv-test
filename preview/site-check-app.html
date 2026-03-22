@@ -211,9 +211,6 @@ tr.highlight td { background: #fef3c7; font-weight: 700; }
         <button class="btn btn-primary" onclick="confirmPlacesResult()">Confirm & Use →</button>
       </div>
     </div>
-    <div class="apikey-hint" id="apikeyHint" style="display:none">
-      Google Places requires an API key. <a onclick="promptGmapsKey()">Set API key</a> to enable address search.
-    </div>
   </div>
 
   <div class="card">
@@ -1518,24 +1515,11 @@ function selectCombo(field, value) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GEOCODING ADDRESS SEARCH (Google Geocoding API via fetch)
+// ADDRESS SEARCH — Nominatim (OpenStreetMap, no API key needed)
 // ═══════════════════════════════════════════════════════════════
 let _placesResult = null;
 
-function _getApiKey() { return localStorage.getItem('gmaps_api_key'); }
-
-function _checkApiKey() {
-  const key = _getApiKey();
-  if (!key) {
-    document.getElementById('apikeyHint').style.display = 'block';
-    return false;
-  }
-  document.getElementById('apikeyHint').style.display = 'none';
-  return true;
-}
-
 async function doPlacesSearch() {
-  if (!_checkApiKey()) { promptGmapsKey(); return; }
   const query = document.getElementById('addressSearchInput').value.trim();
   if (!query) return;
 
@@ -1545,21 +1529,17 @@ async function doPlacesSearch() {
   document.getElementById('placesConfirmPanel').classList.remove('show');
 
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=vn&key=${_getApiKey()}`;
-    const res = await fetch(url);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=vn&limit=5`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
     const data = await res.json();
-    if (data.status === 'REQUEST_DENIED') {
-      alert('API key rejected: ' + (data.error_message || 'check key and enable Geocoding API'));
+    if (!data || data.length === 0) {
+      alert('No results found. Try adding "Vietnam" or a district name.');
       return;
     }
-    if (!data.results || data.results.length === 0) {
-      alert('No results found. Try a more specific address.');
-      return;
-    }
-    if (data.results.length === 1) {
-      _showConfirmPanel(data.results[0]);
+    if (data.length === 1) {
+      _showConfirmPanel(data[0]);
     } else {
-      _showResultsList(data.results.slice(0, 5));
+      _showResultsList(data);
     }
   } catch (e) {
     alert('Search failed: ' + e.message);
@@ -1571,8 +1551,9 @@ async function doPlacesSearch() {
 function _showResultsList(results) {
   const el = document.getElementById('placesResultsList');
   el.innerHTML = results.map((r, i) => {
-    const main = r.address_components?.[0]?.long_name || r.formatted_address.split(',')[0];
-    const sub  = r.formatted_address;
+    const parts = r.display_name.split(', ');
+    const main  = parts.slice(0, 2).join(', ');
+    const sub   = parts.slice(2).join(', ');
     return `<div class="places-result-item" onclick="_showConfirmPanel(window._geocodeResults[${i}])">
       <div class="places-result-main">${main}</div>
       <div class="places-result-sub">${sub}</div>
@@ -1584,34 +1565,27 @@ function _showResultsList(results) {
 
 function _showConfirmPanel(result) {
   document.getElementById('placesResultsList').classList.remove('show');
-  const comps = result.address_components;
-  const get = (...types) => {
-    for (const t of types) {
-      const c = comps.find(c => c.types.includes(t));
-      if (c) return c.long_name;
-    }
-    return '';
-  };
-  const cityRaw     = get('administrative_area_level_1');
-  const districtRaw = get('administrative_area_level_2');
-  const wardRaw     = get('sublocality_level_1', 'administrative_area_level_3', 'sublocality');
-  const streetNum   = get('street_number');
-  const route       = get('route');
+  const a = result.address || {};
+  const cityRaw     = a.city || a.state || '';
+  const districtRaw = a.city_district || a.county || '';
+  const wardRaw     = a.suburb || a.neighbourhood || a.quarter || '';
+  const streetNum   = a.house_number || '';
+  const route       = a.road || '';
   const streetAddr  = [streetNum, route].filter(Boolean).join(' ');
-  const lat = result.geometry.location.lat;
-  const lng = result.geometry.location.lng;
+  const lat = parseFloat(result.lat);
+  const lng = parseFloat(result.lon);
 
   const cityCode      = _mapCityCode(cityRaw);
   const districtMatch = _fuzzyMatchDistrict(cityCode, districtRaw);
   const wardMatch     = _fuzzyMatchWard(cityCode, districtMatch, wardRaw);
 
-  _placesResult = { cityCode, cityRaw, districtRaw, districtMatch, wardRaw, wardMatch, streetAddr, lat, lng, formatted: result.formatted_address };
+  _placesResult = { cityCode, cityRaw, districtRaw, districtMatch, wardRaw, wardMatch, streetAddr, lat, lng, formatted: result.display_name };
 
   document.getElementById('pc_city').textContent     = VN_ADMIN[cityCode]?.name || cityRaw || '—';
   document.getElementById('pc_district').textContent = districtMatch || districtRaw || '—';
   document.getElementById('pc_ward').textContent     = wardMatch || wardRaw || '—';
   document.getElementById('pc_gps').textContent      = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  document.getElementById('pc_address').textContent  = result.formatted_address;
+  document.getElementById('pc_address').textContent  = result.display_name;
   document.getElementById('placesConfirmPanel').classList.add('show');
 }
 
@@ -1670,18 +1644,6 @@ function clearPlacesSearch() {
   document.getElementById('placesConfirmPanel').classList.remove('show');
   document.getElementById('placesResultsList').classList.remove('show');
 }
-
-function promptGmapsKey() {
-  const existing = _getApiKey() || '';
-  const key = prompt('Enter your Google Maps API key (Geocoding API must be enabled):', existing);
-  if (key && key.trim()) {
-    localStorage.setItem('gmaps_api_key', key.trim());
-    document.getElementById('apikeyHint').style.display = 'none';
-  }
-}
-
-// Show hint if no key stored
-if (!_getApiKey()) document.getElementById('apikeyHint').style.display = 'block';
 
 // Init on load
 onCityChange();
