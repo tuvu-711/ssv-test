@@ -113,9 +113,19 @@ tr.highlight td { background: #fef3c7; font-weight: 700; }
 /* Address Search */
 .search-card { background: linear-gradient(135deg, var(--sev-light) 0%, #fff 100%); border: 2px solid var(--sev); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
 .search-card h2 { font-size: 16px; color: var(--sev-dark); margin-bottom: 12px; }
-.places-input-wrap { position: relative; }
-#addressSearchInput { width: 100%; padding: 12px 16px 12px 44px; border: 2px solid var(--sev); border-radius: 8px; font-size: 15px; font-family: inherit; transition: box-shadow .2s; }
+.places-input-wrap { display: flex; gap: 8px; align-items: center; }
+#addressSearchInput { flex: 1; padding: 12px 16px 12px 44px; border: 2px solid var(--sev); border-radius: 8px; font-size: 15px; font-family: inherit; transition: box-shadow .2s; }
 #addressSearchInput:focus { outline: none; box-shadow: 0 0 0 4px rgba(0,115,80,.15); }
+.places-search-btn { padding: 12px 18px; background: var(--sev); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.places-search-btn:hover { background: var(--sev-dark); }
+.places-search-btn:disabled { opacity: .6; cursor: default; }
+.places-results-list { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: none; }
+.places-results-list.show { display: block; }
+.places-result-item { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); background: #fff; }
+.places-result-item:last-child { border-bottom: none; }
+.places-result-item:hover { background: var(--sev-light); }
+.places-result-main { font-weight: 600; color: var(--text); }
+.places-result-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .places-confirm-panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 14px; display: none; }
 .places-confirm-panel.show { display: block; }
 .places-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -166,10 +176,13 @@ tr.highlight td { background: #fef3c7; font-weight: 700; }
   <!-- Address Search -->
   <div class="search-card">
     <h2>Search Address</h2>
-    <div class="places-input-wrap">
+    <div class="places-input-wrap" style="position:relative">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#6b7280;pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="addressSearchInput" placeholder="e.g. 157 Ly Tu Trong, HCMC" autocomplete="off">
+      <input type="text" id="addressSearchInput" placeholder="e.g. 157 Ly Tu Trong, HCMC" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();doPlacesSearch();}">
+      <button class="places-search-btn" id="searchBtn" onclick="doPlacesSearch()">Search</button>
     </div>
+    <div id="placesResultsList" class="places-results-list"></div>
     <div id="placesConfirmPanel" class="places-confirm-panel">
       <div class="places-detail-grid">
         <div class="places-detail-item">
@@ -1505,42 +1518,73 @@ function selectCombo(field, value) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GOOGLE PLACES ADDRESS SEARCH
+// GEOCODING ADDRESS SEARCH (Google Geocoding API via fetch)
 // ═══════════════════════════════════════════════════════════════
 let _placesResult = null;
 
-function initPlacesSearch() {
-  const apiKey = localStorage.getItem('gmaps_api_key');
-  if (!apiKey) {
+function _getApiKey() { return localStorage.getItem('gmaps_api_key'); }
+
+function _checkApiKey() {
+  const key = _getApiKey();
+  if (!key) {
     document.getElementById('apikeyHint').style.display = 'block';
-    return;
+    return false;
   }
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=en&region=VN&callback=_onPlacesReady`;
-  script.async = true;
-  script.onerror = () => {
-    const hint = document.getElementById('apikeyHint');
-    hint.style.display = 'block';
-    hint.innerHTML = 'API key invalid or Maps API not enabled. <a onclick="promptGmapsKey()">Update key</a>';
-  };
-  document.head.appendChild(script);
+  document.getElementById('apikeyHint').style.display = 'none';
+  return true;
 }
 
-window._onPlacesReady = function() {
-  const input = document.getElementById('addressSearchInput');
-  const ac = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: 'vn' },
-    fields: ['address_components', 'geometry', 'formatted_address'],
-    types: ['address']
-  });
-  ac.addListener('place_changed', () => _onPlaceSelected(ac));
-  document.getElementById('apikeyHint').style.display = 'none';
-};
+async function doPlacesSearch() {
+  if (!_checkApiKey()) { promptGmapsKey(); return; }
+  const query = document.getElementById('addressSearchInput').value.trim();
+  if (!query) return;
 
-function _onPlaceSelected(ac) {
-  const place = ac.getPlace();
-  if (!place.geometry) return;
-  const comps = place.address_components;
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true; btn.textContent = 'Searching…';
+  document.getElementById('placesResultsList').classList.remove('show');
+  document.getElementById('placesConfirmPanel').classList.remove('show');
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=vn&key=${_getApiKey()}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'REQUEST_DENIED') {
+      alert('API key rejected: ' + (data.error_message || 'check key and enable Geocoding API'));
+      return;
+    }
+    if (!data.results || data.results.length === 0) {
+      alert('No results found. Try a more specific address.');
+      return;
+    }
+    if (data.results.length === 1) {
+      _showConfirmPanel(data.results[0]);
+    } else {
+      _showResultsList(data.results.slice(0, 5));
+    }
+  } catch (e) {
+    alert('Search failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+
+function _showResultsList(results) {
+  const el = document.getElementById('placesResultsList');
+  el.innerHTML = results.map((r, i) => {
+    const main = r.address_components?.[0]?.long_name || r.formatted_address.split(',')[0];
+    const sub  = r.formatted_address;
+    return `<div class="places-result-item" onclick="_showConfirmPanel(window._geocodeResults[${i}])">
+      <div class="places-result-main">${main}</div>
+      <div class="places-result-sub">${sub}</div>
+    </div>`;
+  }).join('');
+  window._geocodeResults = results;
+  el.classList.add('show');
+}
+
+function _showConfirmPanel(result) {
+  document.getElementById('placesResultsList').classList.remove('show');
+  const comps = result.address_components;
   const get = (...types) => {
     for (const t of types) {
       const c = comps.find(c => c.types.includes(t));
@@ -1548,26 +1592,26 @@ function _onPlaceSelected(ac) {
     }
     return '';
   };
-  const cityRaw      = get('administrative_area_level_1');
-  const districtRaw  = get('administrative_area_level_2');
-  const wardRaw      = get('sublocality_level_1', 'administrative_area_level_3', 'sublocality');
-  const streetNum    = get('street_number');
-  const route        = get('route');
-  const streetAddr   = [streetNum, route].filter(Boolean).join(' ');
-  const lat = place.geometry.location.lat();
-  const lng = place.geometry.location.lng();
+  const cityRaw     = get('administrative_area_level_1');
+  const districtRaw = get('administrative_area_level_2');
+  const wardRaw     = get('sublocality_level_1', 'administrative_area_level_3', 'sublocality');
+  const streetNum   = get('street_number');
+  const route       = get('route');
+  const streetAddr  = [streetNum, route].filter(Boolean).join(' ');
+  const lat = result.geometry.location.lat;
+  const lng = result.geometry.location.lng;
 
-  const cityCode       = _mapCityCode(cityRaw);
-  const districtMatch  = _fuzzyMatchDistrict(cityCode, districtRaw);
-  const wardMatch      = _fuzzyMatchWard(cityCode, districtMatch, wardRaw);
+  const cityCode      = _mapCityCode(cityRaw);
+  const districtMatch = _fuzzyMatchDistrict(cityCode, districtRaw);
+  const wardMatch     = _fuzzyMatchWard(cityCode, districtMatch, wardRaw);
 
-  _placesResult = { cityCode, cityRaw, districtRaw, districtMatch, wardRaw, wardMatch, streetAddr, lat, lng, formatted: place.formatted_address };
+  _placesResult = { cityCode, cityRaw, districtRaw, districtMatch, wardRaw, wardMatch, streetAddr, lat, lng, formatted: result.formatted_address };
 
   document.getElementById('pc_city').textContent     = VN_ADMIN[cityCode]?.name || cityRaw || '—';
   document.getElementById('pc_district').textContent = districtMatch || districtRaw || '—';
   document.getElementById('pc_ward').textContent     = wardMatch || wardRaw || '—';
   document.getElementById('pc_gps').textContent      = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  document.getElementById('pc_address').textContent  = place.formatted_address;
+  document.getElementById('pc_address').textContent  = result.formatted_address;
   document.getElementById('placesConfirmPanel').classList.add('show');
 }
 
@@ -1624,18 +1668,20 @@ function clearPlacesSearch() {
   _placesResult = null;
   $('addressSearchInput').value = '';
   document.getElementById('placesConfirmPanel').classList.remove('show');
+  document.getElementById('placesResultsList').classList.remove('show');
 }
 
 function promptGmapsKey() {
-  const existing = localStorage.getItem('gmaps_api_key') || '';
-  const key = prompt('Enter your Google Maps API key:', existing);
+  const existing = _getApiKey() || '';
+  const key = prompt('Enter your Google Maps API key (Geocoding API must be enabled):', existing);
   if (key && key.trim()) {
     localStorage.setItem('gmaps_api_key', key.trim());
-    location.reload();
+    document.getElementById('apikeyHint').style.display = 'none';
   }
 }
 
-initPlacesSearch();
+// Show hint if no key stored
+if (!_getApiKey()) document.getElementById('apikeyHint').style.display = 'block';
 
 // Init on load
 onCityChange();
