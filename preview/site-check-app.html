@@ -119,7 +119,7 @@ tr.highlight td { background: #fef3c7; font-weight: 700; }
 .places-search-btn { padding: 12px 18px; background: var(--sev); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .places-search-btn:hover { background: var(--sev-dark); }
 .places-search-btn:disabled { opacity: .6; cursor: default; }
-.places-results-list { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: none; }
+.places-results-list { margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
 .places-results-list.show { display: block; }
 .places-result-item { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); background: #fff; }
 .places-result-item:last-child { border-bottom: none; }
@@ -179,7 +179,8 @@ tr.highlight td { background: #fef3c7; font-weight: 700; }
     <div class="places-input-wrap" style="position:relative">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#6b7280;pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="addressSearchInput" placeholder="e.g. 157 Ly Tu Trong, HCMC" autocomplete="off"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();doPlacesSearch();}">
+        oninput="debounceSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();doPlacesSearch();}
+        if(event.key==='Escape'){clearPlacesSearch();}">
       <button class="places-search-btn" id="searchBtn" onclick="doPlacesSearch()">Search</button>
     </div>
     <div id="placesResultsList" class="places-results-list"></div>
@@ -1518,22 +1519,39 @@ function selectCombo(field, value) {
 // ADDRESS SEARCH — Nominatim (OpenStreetMap, no API key needed)
 // ═══════════════════════════════════════════════════════════════
 let _placesResult = null;
+let _debounceTimer = null;
+
+function debounceSearch() {
+  clearTimeout(_debounceTimer);
+  const q = document.getElementById('addressSearchInput').value.trim();
+  if (q.length < 3) {
+    document.getElementById('placesResultsList').classList.remove('show');
+    document.getElementById('placesConfirmPanel').classList.remove('show');
+    return;
+  }
+  _debounceTimer = setTimeout(doPlacesSearch, 420);
+}
 
 async function doPlacesSearch() {
-  const query = document.getElementById('addressSearchInput').value.trim();
+  let query = document.getElementById('addressSearchInput').value.trim();
   if (!query) return;
 
+  // Bias to Vietnam if no country hint present
+  const hasVN = /vietnam|viet nam|hcmc|hcm|hanoi|ha noi/i.test(query);
+  const searchQ = hasVN ? query : query + ', Vietnam';
+
   const btn = document.getElementById('searchBtn');
-  btn.disabled = true; btn.textContent = 'Searching…';
+  btn.disabled = true; btn.textContent = '…';
   document.getElementById('placesResultsList').classList.remove('show');
   document.getElementById('placesConfirmPanel').classList.remove('show');
 
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=vn&limit=5`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    // countrycodes=vn + viewbox biased to Vietnam (south to north)
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&countrycodes=vn&viewbox=102.14,8.18,109.47,23.39&bounded=0&limit=7&dedupe=1`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'vi,en' } });
     const data = await res.json();
     if (!data || data.length === 0) {
-      alert('No results found. Try adding "Vietnam" or a district name.');
+      _showNoResults();
       return;
     }
     if (data.length === 1) {
@@ -1542,10 +1560,22 @@ async function doPlacesSearch() {
       _showResultsList(data);
     }
   } catch (e) {
-    alert('Search failed: ' + e.message);
+    _showInlineError('Search failed — check your connection.');
   } finally {
     btn.disabled = false; btn.textContent = 'Search';
   }
+}
+
+function _showNoResults() {
+  const el = document.getElementById('placesResultsList');
+  el.innerHTML = `<div class="combo-empty" style="padding:12px 14px">No results found. Try adding a district name (e.g. "District 1") or city.</div>`;
+  el.classList.add('show');
+}
+
+function _showInlineError(msg) {
+  const el = document.getElementById('placesResultsList');
+  el.innerHTML = `<div class="combo-empty" style="padding:12px 14px;color:#b91c1c">${msg}</div>`;
+  el.classList.add('show');
 }
 
 function _showResultsList(results) {
