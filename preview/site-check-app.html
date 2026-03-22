@@ -1546,18 +1546,20 @@ async function doPlacesSearch() {
   document.getElementById('placesConfirmPanel').classList.remove('show');
 
   try {
-    // countrycodes=vn + viewbox biased to Vietnam (south to north)
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&countrycodes=vn&viewbox=102.14,8.18,109.47,23.39&bounded=0&limit=7&dedupe=1`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'vi,en' } });
+    // viewbox format: left,top,right,bottom = minLon,maxLat,maxLon,minLat
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&countrycodes=vn&viewbox=102.14,23.39,109.47,8.18&bounded=0&limit=8&dedupe=1`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
     const data = await res.json();
-    if (!data || data.length === 0) {
+    // Client-side guard: reject any result not in Vietnam
+    const vnOnly = (data || []).filter(r => (r.address?.country_code || '').toLowerCase() === 'vn');
+    if (vnOnly.length === 0) {
       _showNoResults();
       return;
     }
-    if (data.length === 1) {
-      _showConfirmPanel(data[0]);
+    if (vnOnly.length === 1) {
+      _showConfirmPanel(vnOnly[0]);
     } else {
-      _showResultsList(data);
+      _showResultsList(vnOnly);
     }
   } catch (e) {
     _showInlineError('Search failed — check your connection.');
